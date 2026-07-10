@@ -100,6 +100,28 @@ sequenceDiagram
   Prisma->>DB: tenant-scoped query
 ```
 
+Fluxo concreto implementado na Fase 3:
+
+```mermaid
+sequenceDiagram
+  participant Request
+  participant Context as Authenticated context
+  participant Service as Application service
+  participant Repo as Tenant-aware repository
+  participant Prisma
+  participant DB as PostgreSQL
+
+  Request->>Context: resolve session cookie
+  Context->>Service: userId, organizationId, role
+  Service->>Repo: context and validated input
+  Repo->>Prisma: query with organizationId
+  Prisma->>DB: tenant-scoped operation
+```
+
+Na criacao de Equipment, o service valida primeiro o `customerId` usando
+`customerId + context.organizationId`. Somente depois cria o Equipment com
+`organizationId` vindo do contexto autenticado.
+
 ## Acesso a dados
 
 O Prisma Client fica centralizado em `src/server/db/prisma.ts`. O arquivo evita
@@ -114,6 +136,17 @@ Os repositories de autenticacao atuais sao pequenos e concretos:
 - `auth-user-repository`: busca User por email normalizado, por id e com
   Organization para DTOs seguros.
 - `auth-session-repository`: cria, localiza e remove AuthSession.
+
+Os repositories de negocio implementados na Fase 3 tambem sao pequenos e
+concretos:
+
+- `customer-repository`: listagem, contagem, busca por id, criacao e atualizacao
+  tenant-aware de Customer.
+- `equipment-repository`: listagem, contagem, busca por Customer, busca por id,
+  criacao e atualizacao tenant-aware de Equipment.
+
+Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
+Equipment usando apenas o ID da entidade.
 
 ## Fronteiras server-side
 
@@ -195,6 +228,21 @@ O schema inicial tambem usa chaves compostas como `[id, organizationId]` em
 entidades de negocio para reduzir o risco de relacionamentos cruzados entre
 tenants. Ainda assim, isso nao substitui validacao e filtros no codigo.
 
+A defesa atual para operacoes multi-tenant tem camadas complementares:
+
+1. a sessao identifica o User;
+2. o User persistido determina a Organization;
+3. `AuthenticatedContext` carrega o `organizationId` confiavel;
+4. o service recebe esse contexto explicitamente;
+5. o repository exige contexto;
+6. a consulta inclui `organizationId`;
+7. relacionamentos e constraints compostas do banco reforcam integridade quando
+   existentes.
+
+Nenhuma dessas camadas substitui as demais. A protecao de rota nao substitui o
+filtro de tenant no repository, e a constraint do banco nao substitui a validacao
+do `customerId` no service.
+
 Row Level Security do PostgreSQL pode ser avaliado em uma fase futura, mas nao
 foi implementado nesta fase para manter o escopo controlado.
 
@@ -217,7 +265,7 @@ foi implementado nesta fase para manter o escopo controlado.
 
 - autenticacao;
 - contexto de Organization por request;
-- repositories para casos de uso reais;
+- repositories para novos casos de uso reais;
 - auditoria de eventos;
 - controle de permissoes por papel;
 - Row Level Security;

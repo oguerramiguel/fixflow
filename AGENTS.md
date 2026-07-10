@@ -43,6 +43,15 @@ Nunca confie em `organizationId` enviado pelo cliente para autorizacao ou
 isolamento de dados. Operacoes multi-tenant devem usar contexto autenticado
 resolvido no servidor a partir do User persistido.
 
+Repositories de entidades multi-tenant devem exigir contexto confiavel.
+Operacoes de criacao nao devem aceitar `organizationId` vindo de input do
+cliente. IDs de recursos recebidos do browser, como `customerId` ou
+`equipmentId`, devem ser revalidados dentro do tenant antes de qualquer
+associacao ou atualizacao.
+
+Alteracoes em queries tenant-aware exigem testes de isolamento por
+Organization.
+
 ## Autenticacao
 
 - `passwordHash` nunca deve ser retornado em DTOs, props ou respostas HTTP.

@@ -16,6 +16,12 @@ describe("password policy", () => {
     );
   });
 
+  it("rejects a password that bcrypt would truncate", () => {
+    const passwordWithinCharacterLimit = "é".repeat(PASSWORD_MAX_LENGTH);
+
+    expect(validatePassword(passwordWithinCharacterLimit).valid).toBe(false);
+  });
+
   it("accepts a valid password", () => {
     expect(validatePassword("a".repeat(PASSWORD_MIN_LENGTH)).valid).toBe(true);
   });

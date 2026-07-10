@@ -85,6 +85,30 @@ A Fase 2 implementa autenticacao basica, sessao opaca persistida,
 cadastro publico, convite de usuarios, recuperacao de senha, verificacao de
 email, MFA, CRUDs de negocio ou dashboard com metricas.
 
+## Status da Fase 3
+
+A Fase 3 implementa gerenciamento autenticado e multi-tenant de Customer e
+Equipment.
+
+Requisitos funcionais atendidos nesta fase:
+
+- RF003: cadastro, consulta, busca, detalhes e edicao de clientes.
+- RF004: cadastro, consulta, busca, detalhes e edicao de equipamentos
+  vinculados a clientes.
+- RF014: tenant isolation aplicado nas operacoes de Customer e Equipment.
+
+Requisitos nao funcionais reforcados nesta fase:
+
+- RNF004: acesso a dados organizado em repositories concretos.
+- RNF005: consultas de entidades de negocio filtradas por `organizationId`.
+- RNF007: testes de validacao, services, repositories, delivery e isolamento por
+  tenant.
+- RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
+  obrigatorios.
+
+ServiceOrder, diagnostico, orcamento, timeline e portal publico continuam fora
+do escopo implementado.
+
 ## Fora do escopo inicial
 
 - cadastro publico de usuarios;

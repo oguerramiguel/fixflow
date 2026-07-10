@@ -96,6 +96,30 @@ garante isolamento se o codigo consultar apenas por IDs isolados.
 recebe `organizationId` diretamente; o contexto da Organization vem do User
 autenticado associado a sessao.
 
+## Customer e Equipment na Fase 3
+
+Customer e Equipment pertencem diretamente a Organization. Equipment tambem
+pertence a Customer, mas mantem seu proprio `organizationId` para que consultas
+de equipamentos sejam filtradas pelo tenant sem depender apenas do relacionamento
+com Customer.
+
+A relacao `Equipment.customer` usa os campos compostos
+`[customerId, organizationId] -> Customer[id, organizationId]`. Isso evita ou
+reduz a possibilidade de associar um Equipment a Customer de outra Organization.
+Mesmo assim, a aplicacao valida `customerId` com `context.organizationId` antes
+de criar Equipment.
+
+As consultas implementadas nesta fase usam os indices existentes:
+
+- `Customer_organizationId_idx` para escopo por tenant;
+- `Customer_organizationId_name_idx` para listagem ordenada e busca por nome;
+- `Equipment_organizationId_idx` para escopo por tenant;
+- `Equipment_organizationId_customerId_idx` para equipamentos de um Customer;
+- `Equipment_organizationId_serialNumber_key` para unicidade de serie dentro da
+  Organization.
+
+Nenhuma alteracao de schema ou migration foi necessaria nesta fase.
+
 ## Estrategia de publicCode
 
 `ServiceOrder.publicCode` sera usado futuramente para acompanhamento publico da

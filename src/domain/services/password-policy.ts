@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { DomainError } from "../errors/domain-error";
 
 export const PASSWORD_MIN_LENGTH = 12;
@@ -24,6 +25,13 @@ export function validatePassword(password: string): PasswordValidationResult {
     return {
       valid: false,
       message: `Password must have at most ${PASSWORD_MAX_LENGTH} characters.`
+    };
+  }
+
+  if (bcrypt.truncates(password)) {
+    return {
+      valid: false,
+      message: "Password must not exceed bcrypt input limits."
     };
   }
 

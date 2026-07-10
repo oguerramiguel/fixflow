@@ -17,7 +17,7 @@ entrevistas.
 
 ## Status atual
 
-Fase 2: base de autenticacao e contexto autenticado de Organization.
+Fase 3: gerenciamento autenticado e multi-tenant de clientes e equipamentos.
 
 Implementado ate aqui:
 
@@ -39,11 +39,19 @@ Implementado ate aqui:
 - contexto autenticado com `organizationId` derivado do User persistido;
 - base simples de autorizacao por role;
 - bootstrap de desenvolvimento por variaveis de ambiente;
-- documentacao tecnica de autenticacao.
+- listagem, busca, detalhes, cadastro e edicao de clientes;
+- listagem, busca, detalhes, cadastro e edicao de equipamentos;
+- cadastro de equipamento vinculado a cliente validado dentro do tenant;
+- visualizacao de equipamentos vinculados a um cliente;
+- repositories e services tenant-aware para Customer e Equipment;
+- validacao centralizada de Customer e Equipment;
+- checkpoint de senha contra truncation silenciosa do bcrypt;
+- documentacao tecnica de autenticacao, Customer e Equipment.
 
 Ainda nao implementado:
 
-- CRUD de clientes, equipamentos ou ordens de servico;
+- ordens de servico;
+- diagnostico, orcamento e timeline funcional;
 - dashboard funcional;
 - portal publico do cliente;
 - envio de e-mails;
@@ -77,14 +85,15 @@ O projeto usa uma arquitetura simples em camadas:
 - `src/lib`: configuracoes e utilitarios compartilhados;
 - `src/domain`: entidades, regras de dominio e erros testaveis;
 - `src/server/db`: Prisma Client centralizado;
-- `src/server/repositories`: contratos e utilitarios de acesso a dados futuros;
+- `src/server/repositories`: repositories concretos e tenant-aware;
+- `src/server/services`: services de aplicacao server-side;
 - `prisma`: schema e migrations do banco;
 - `tests`: testes automatizados;
 - `docs`: documentacao de produto, arquitetura, banco e workflow.
 
 Regras de negocio nao devem ser implementadas diretamente em componentes React.
-Consultas futuras devem receber o contexto da `Organization` para preservar o
-isolamento logico entre tenants.
+Consultas de entidades multi-tenant recebem o contexto da `Organization` para
+preservar o isolamento logico entre tenants.
 
 ## Requisitos para desenvolvimento
 
@@ -190,6 +199,12 @@ Os testes atuais cobrem:
 - resolucao de contexto autenticado;
 - autorizacao por role;
 - DTO seguro de `GET /api/me`.
+- validacao de Customer;
+- validacao de Equipment;
+- repositories tenant-aware de Customer e Equipment;
+- services de Customer e Equipment;
+- Server Actions de Customer e Equipment;
+- checkpoint de truncation do bcrypt.
 
 ## Estrutura de diretorios
 
@@ -205,11 +220,21 @@ src/
   server/
     db/
     repositories/
+    services/
 prisma/
   migrations/
 tests/
 docs/
 ```
+
+## Documentacao tecnica
+
+- `docs/authentication.md`
+- `docs/customer-equipment.md`
+- `docs/service-order-workflow.md`
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/requirements.md`
 
 ## Roadmap
 
@@ -218,8 +243,8 @@ docs/
 - [x] Health check
 - [x] Base de autenticacao
 - [x] Contexto de Organization em requests autenticadas
-- [ ] CRUD de clientes
-- [ ] CRUD de equipamentos
+- [x] CRUD de clientes sem exclusao
+- [x] CRUD de equipamentos sem exclusao
 - [ ] Ordens de servico
 - [ ] Diagnostico tecnico
 - [ ] Orcamentos

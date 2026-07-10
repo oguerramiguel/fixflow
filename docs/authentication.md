@@ -32,9 +32,14 @@ representar usuarios diferentes em Organizations distintas.
 
 ## Password hashing
 
-Senhas sao validadas com minimo de 12 e maximo de 64 caracteres. Politicas mais
-sofisticadas podem evoluir futuramente, mas a Fase 2 nao exige simbolo, numero
-ou letra maiuscula.
+Senhas sao validadas com minimo de 12 e maximo de 64 caracteres. A validacao
+tambem rejeita entradas que `bcryptjs.truncates` informa que seriam truncadas
+pelo limite efetivo do bcrypt. Isso evita que duas senhas distintas sejam
+silenciosamente tratadas como equivalentes antes do hash, especialmente quando
+caracteres UTF-8 ocupam mais de um byte.
+
+Politicas mais sofisticadas podem evoluir futuramente, mas a implementacao
+atual nao exige simbolo, numero ou letra maiuscula.
 
 O hash usa `bcryptjs` com cost factor 12. A senha bruta nao e armazenada, nao e
 logada e nao aparece em DTOs. O hash reduz o risco em caso de vazamento, mas nao

@@ -1,0 +1,157 @@
+# Database
+
+## Banco
+
+O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
+`prisma/schema.prisma` e a primeira migration em `prisma/migrations`.
+
+## Entidades
+
+- Organization: representa a assistencia tecnica e o tenant.
+- User: usuario interno da Organization.
+- AuthSession: sessao opaca persistida para um User autenticado.
+- Customer: cliente da assistencia.
+- Equipment: equipamento vinculado a um cliente.
+- ServiceOrder: ordem de servico.
+- Diagnostic: diagnostico tecnico de uma ordem de servico.
+- Quote: orcamento de uma ordem de servico.
+- QuoteItem: item de orcamento.
+- ServiceOrderTimeline: evento de historico da ordem de servico.
+
+## Relacionamentos
+
+- Organization possui usuarios, clientes, equipamentos, ordens, diagnosticos,
+  orcamentos, itens de orcamento e timeline.
+- User possui varias AuthSession.
+- Customer possui Equipment e ServiceOrder.
+- Equipment pertence a Customer e pode aparecer em varias ServiceOrder.
+- ServiceOrder possui no maximo um Diagnostic, varios Quote e varios eventos de
+  timeline.
+- Quote possui varios QuoteItem.
+
+## Decisoes de modelagem
+
+- IDs internos usam `String @default(cuid())` para evitar sequencias previsiveis.
+- Toda entidade de negocio possui `organizationId`.
+- Relacionamentos entre entidades de negocio usam chaves compostas com
+  `organizationId` quando possivel.
+- `User.email` e unico globalmente nesta fase para simplificar autenticacao
+  atual. Isso significa que o mesmo email nao pode representar usuarios
+  diferentes em Organizations distintas. Um modelo de memberships pode ser
+  avaliado se o mesmo usuario precisar
+  pertencer a varias Organizations.
+- `User.passwordHash` e obrigatorio porque, nesta fase, usuarios internos
+  autenticam por senha. OAuth ou provedores externos futuros exigiriam uma
+  decisao de modelagem mais ampla.
+- `AuthSession` nao possui `organizationId`. Ela pertence ao User, e a
+  Organization confiavel e resolvida a partir do User persistido.
+- `AuthSession.tokenHash` armazena o hash SHA-256 deterministico do token bruto.
+  O token bruto existe apenas no cookie HTTP-only e durante o fluxo de criacao
+  ou invalidacao da sessao.
+- A expiracao inicial da sessao e fixa em 7 dias a partir da criacao. Nao ha
+  sliding expiration nesta fase.
+- `Diagnostic` e unico por `ServiceOrder` dentro da Organization.
+- `Quote` permite multiplos registros por ServiceOrder para preservar evolucao
+  futura de revisoes de orcamento.
+
+## Valores monetarios
+
+Valores monetarios nunca usam Float. `QuoteItem.unitPrice` usa
+`Decimal @db.Decimal(12, 2)`, armazenado no PostgreSQL como `DECIMAL(12,2)`.
+Isso evita erros de arredondamento binario comuns em `Float`.
+
+## Indices
+
+Indices iniciais priorizam:
+
+- busca por Organization;
+- busca de clientes por nome dentro da Organization;
+- equipamentos de um Customer;
+- ordens de uma Organization;
+- ordens por Customer, Equipment, status e data;
+- timeline de uma ServiceOrder ordenada por criacao;
+- quotes por ServiceOrder e status;
+- sessoes por User;
+- limpeza futura de sessoes por `expiresAt`.
+
+`AuthSession.tokenHash` usa constraint `unique`, que ja cria indice para busca
+por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
+
+## Unicidade
+
+- `Organization.slug` e unico.
+- `User.email` e unico globalmente.
+- `AuthSession.tokenHash` e unico globalmente.
+- `ServiceOrder.publicCode` e unico globalmente.
+- `Equipment` tem unicidade em `[organizationId, serialNumber]`; PostgreSQL
+  permite multiplos `NULL`, entao equipamentos sem serial nao entram em conflito.
+
+## Uso de organizationId
+
+`organizationId` existe em todas as entidades de negocio. Ele deve ser usado em
+consultas futuras junto com o ID da entidade. A presenca do campo no banco nao
+garante isolamento se o codigo consultar apenas por IDs isolados.
+
+`AuthSession` nao e entidade de negocio de uma assistencia tecnica. Ela nao
+recebe `organizationId` diretamente; o contexto da Organization vem do User
+autenticado associado a sessao.
+
+## Estrategia de publicCode
+
+`ServiceOrder.publicCode` sera usado futuramente para acompanhamento publico da
+OS. Ele nao deve ser ID incremental nem derivado do ID interno. A estrategia
+inicial e gerar um codigo com prefixo `FF-` e 10 caracteres aleatorios usando
+alfabeto sem caracteres ambiguos.
+
+Exemplo conceitual: `FF-7KQ4M2X9AB`.
+
+O campo e unico globalmente. Em caso raro de colisao, o service futuro deve
+gerar novo codigo e tentar novamente dentro de uma transacao segura.
+
+## Diagrama ER simplificado
+
+```mermaid
+erDiagram
+  Organization ||--o{ User : has
+  User ||--o{ AuthSession : has
+  Organization ||--o{ Customer : has
+  Organization ||--o{ Equipment : has
+  Organization ||--o{ ServiceOrder : has
+  Organization ||--o{ Diagnostic : has
+  Organization ||--o{ Quote : has
+  Organization ||--o{ QuoteItem : has
+  Organization ||--o{ ServiceOrderTimeline : has
+  Customer ||--o{ Equipment : owns
+  Customer ||--o{ ServiceOrder : requests
+  Equipment ||--o{ ServiceOrder : receives
+  ServiceOrder ||--o| Diagnostic : has
+  ServiceOrder ||--o{ Quote : has
+  Quote ||--o{ QuoteItem : contains
+  ServiceOrder ||--o{ ServiceOrderTimeline : records
+```
+
+## Migration de autenticacao
+
+A migration `20260709180000_add_authentication` adiciona:
+
+- coluna obrigatoria `User.passwordHash`;
+- tabela `AuthSession`;
+- unique em `AuthSession.tokenHash`;
+- indice em `AuthSession.userId`;
+- indice em `AuthSession.expiresAt`;
+- foreign key `AuthSession.userId -> User.id` com `ON DELETE CASCADE`.
+
+Como o projeto ainda esta na fundacao e nao possui usuarios reais previstos, a
+coluna `passwordHash` foi adicionada como obrigatoria sem default. Em bancos com
+usuarios existentes, essa migration exigiria um plano de preenchimento dos
+hashes antes de aplicar a constraint.
+
+## Riscos e decisoes futuras
+
+- Avaliar Row Level Security quando houver autenticacao e contexto de tenant.
+- Definir politica de retencao e auditoria de alteracoes.
+- Avaliar se `User.email` deve continuar global ou migrar para um modelo de
+  identidade + memberships.
+- Definir limpeza periodica de sessoes expiradas.
+- Criar testes de integracao para constraints de tenant quando o banco estiver
+  disponivel em CI.

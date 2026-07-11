@@ -17,7 +17,7 @@ entrevistas.
 
 ## Status atual
 
-Fase 3: gerenciamento autenticado e multi-tenant de clientes e equipamentos.
+Fase 4: gerenciamento inicial autenticado e multi-tenant de ordens de servico.
 
 Implementado ate aqui:
 
@@ -43,17 +43,28 @@ Implementado ate aqui:
 - listagem, busca, detalhes, cadastro e edicao de equipamentos;
 - cadastro de equipamento vinculado a cliente validado dentro do tenant;
 - visualizacao de equipamentos vinculados a um cliente;
+- abertura de ordem de servico a partir de Equipment validado dentro do tenant;
+- derivacao server-side de Customer a partir do Equipment da OS;
+- geracao server-side de `publicCode` nao previsivel;
+- listagem, busca, filtro por status, paginacao e detalhes de ordens de
+  servico;
+- workflow server-side de status de ServiceOrder;
+- cancelamento protegido por role OWNER ou ADMIN;
+- timeline inicial e eventos de mudanca de status;
+- concorrencia otimista simples para transicoes de status;
 - repositories e services tenant-aware para Customer e Equipment;
+- repository e service tenant-aware para ServiceOrder;
 - validacao centralizada de Customer e Equipment;
+- validacao centralizada de ServiceOrder;
 - checkpoint de senha contra truncation silenciosa do bcrypt;
-- documentacao tecnica de autenticacao, Customer e Equipment.
+- documentacao tecnica de autenticacao, Customer, Equipment e ServiceOrder.
 
 Ainda nao implementado:
 
-- ordens de servico;
-- diagnostico, orcamento e timeline funcional;
+- diagnostico e orcamento;
 - dashboard funcional;
 - portal publico do cliente;
+- acompanhamento publico por `publicCode`;
 - envio de e-mails;
 - PDF, pagamentos ou integracoes externas.
 
@@ -204,6 +215,11 @@ Os testes atuais cobrem:
 - repositories tenant-aware de Customer e Equipment;
 - services de Customer e Equipment;
 - Server Actions de Customer e Equipment;
+- validacao, workflow, labels e timeline de ServiceOrder;
+- repository tenant-aware de ServiceOrder;
+- service de ServiceOrder com publicCode retry, transacao, autorizacao e
+  concorrencia otimista;
+- Server Actions de ServiceOrder;
 - checkpoint de truncation do bcrypt.
 
 ## Estrutura de diretorios
@@ -231,6 +247,7 @@ docs/
 
 - `docs/authentication.md`
 - `docs/customer-equipment.md`
+- `docs/service-orders.md`
 - `docs/service-order-workflow.md`
 - `docs/architecture.md`
 - `docs/database.md`
@@ -245,9 +262,9 @@ docs/
 - [x] Contexto de Organization em requests autenticadas
 - [x] CRUD de clientes sem exclusao
 - [x] CRUD de equipamentos sem exclusao
-- [ ] Ordens de servico
+- [x] Ordens de servico
+- [x] Timeline inicial e eventos de status da ordem de servico
 - [ ] Diagnostico tecnico
 - [ ] Orcamentos
-- [ ] Timeline da ordem de servico
 - [ ] Acompanhamento publico da OS
 - [ ] Evolucao para controles SaaS multiempresa

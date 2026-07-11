@@ -50,12 +50,20 @@ export default async function EquipmentDetailsPage({
           </p>
         </div>
 
-        <Link
-          href={`/app/equipment/${equipment.id}/edit`}
-          className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-        >
-          Editar equipamento
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/app/equipment/${equipment.id}/service-orders/new`}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          >
+            Abrir ordem de servico
+          </Link>
+          <Link
+            href={`/app/equipment/${equipment.id}/edit`}
+            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          >
+            Editar equipamento
+          </Link>
+        </div>
       </div>
 
       <dl className="mt-8 grid gap-5 rounded-lg border border-slate-200 bg-white p-5 md:grid-cols-2">

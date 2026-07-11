@@ -4,6 +4,7 @@ export function buildListHref(
     page?: number;
     query?: string;
     customerId?: string;
+    status?: string;
   }
 ): string {
   const params = new URLSearchParams();
@@ -14,6 +15,10 @@ export function buildListHref(
 
   if (input.customerId) {
     params.set("customerId", input.customerId);
+  }
+
+  if (input.status) {
+    params.set("status", input.status);
   }
 
   if (input.page && input.page > 1) {

@@ -122,6 +122,58 @@ Na criacao de Equipment, o service valida primeiro o `customerId` usando
 `customerId + context.organizationId`. Somente depois cria o Equipment com
 `organizationId` vindo do contexto autenticado.
 
+Fluxo concreto de criacao de ServiceOrder implementado na Fase 4:
+
+```mermaid
+sequenceDiagram
+  participant UI
+  participant Action as Server Action
+  participant Context as AuthenticatedContext
+  participant Service as ServiceOrder Service
+  participant EquipmentRepo as Equipment repository
+  participant Code as publicCode generator
+  participant Repo as ServiceOrder repository
+  participant Tx as Prisma transaction
+  participant DB as PostgreSQL
+
+  UI->>Action: equipmentId da rota + reportedIssue
+  Action->>Context: requireAuthenticatedContext
+  Context->>Service: userId, organizationId, role
+  Service->>EquipmentRepo: equipmentId + organizationId
+  EquipmentRepo->>Service: Equipment com customerId persistido
+  Service->>Code: gerar publicCode server-side
+  Service->>Repo: customerId derivado + dados validados
+  Repo->>Tx: abrir transacao
+  Tx->>DB: create ServiceOrder
+  Tx->>DB: create initial Timeline
+```
+
+Fluxo concreto de transicao de ServiceOrder:
+
+```mermaid
+sequenceDiagram
+  participant UI
+  participant Action as Server Action
+  participant Context as AuthenticatedContext
+  participant Service as ServiceOrder Service
+  participant Repo as ServiceOrder repository
+  participant Workflow as Domain workflow
+  participant Tx as Prisma transaction
+  participant DB as PostgreSQL
+
+  UI->>Action: serviceOrderId + targetStatus
+  Action->>Context: requireAuthenticatedContext
+  Context->>Service: userId, organizationId, role
+  Service->>Repo: carregar por id + organizationId
+  Repo->>Service: current persisted status
+  Service->>Workflow: validar current -> target
+  Service->>Service: validar role se CANCELLED
+  Service->>Repo: optimistic transition
+  Repo->>Tx: abrir transacao
+  Tx->>DB: update status with expected current status
+  Tx->>DB: create status timeline
+```
+
 ## Acesso a dados
 
 O Prisma Client fica centralizado em `src/server/db/prisma.ts`. O arquivo evita
@@ -138,15 +190,19 @@ Os repositories de autenticacao atuais sao pequenos e concretos:
 - `auth-session-repository`: cria, localiza e remove AuthSession.
 
 Os repositories de negocio implementados na Fase 3 tambem sao pequenos e
-concretos:
+concretos e foram ampliados na Fase 4:
 
 - `customer-repository`: listagem, contagem, busca por id, criacao e atualizacao
   tenant-aware de Customer.
 - `equipment-repository`: listagem, contagem, busca por Customer, busca por id,
   criacao e atualizacao tenant-aware de Equipment.
+- `service-order-repository`: listagem, contagem, detalhes com timeline,
+  criacao de OS com timeline inicial e transicao de status com concorrencia
+  otimista.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
-Equipment usando apenas o ID da entidade.
+Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
+nao oferece busca interna por OS usando apenas o ID da entidade.
 
 ## Fronteiras server-side
 
@@ -163,8 +219,14 @@ regras iniciais para:
 
 - formato de `publicCode` de ordem de servico;
 - transicoes permitidas no workflow de ordem de servico.
+- labels e descricoes server-side de timeline para ServiceOrder;
+- validacao de `reportedIssue` e de status de ServiceOrder.
 
 Essas regras sao testadas sem depender da interface.
+
+O workflow de ServiceOrder permanece pequeno e explicito. Ele nao usa engine de
+workflow, event sourcing ou CQRS. Nesta fase ele valida apenas transicoes
+estruturais; pre-condicoes de Diagnostic e Quote ficam para fases futuras.
 
 ## Tratamento de erros
 
@@ -243,6 +305,16 @@ Nenhuma dessas camadas substitui as demais. A protecao de rota nao substitui o
 filtro de tenant no repository, e a constraint do banco nao substitui a validacao
 do `customerId` no service.
 
+Na abertura de ServiceOrder, `customerId` nao vem do browser. O service carrega
+Equipment dentro do tenant e deriva `customerId` do registro persistido. Na
+transicao de status, o service carrega o status atual do banco e o repository
+atualiza por `id + organizationId + status esperado`; se a contagem for zero,
+o service retorna `ConflictError` e a timeline nao e criada.
+
+Criacao de OS + timeline inicial e mudanca de status + timeline de status usam
+transacoes Prisma especificas no repository. Nao ha UnitOfWork, Transaction
+Manager ou repository generico.
+
 Row Level Security do PostgreSQL pode ser avaliado em uma fase futura, mas nao
 foi implementado nesta fase para manter o escopo controlado.
 
@@ -258,6 +330,9 @@ foi implementado nesta fase para manter o escopo controlado.
 - A expiracao da sessao e fixa em 7 dias, sem sliding expiration nesta fase.
 - `User.email` permanece unico globalmente nesta fase.
 - `ServiceOrder.publicCode` e unico e nao deve ser sequencial.
+- `ServiceOrder.customerId` e derivado do Equipment validado no tenant durante a
+  criacao.
+- `ServiceOrder` muda de status somente por workflow server-side.
 - Valores monetarios usam `Decimal @db.Decimal(12, 2)`.
 - Docker Compose fornece PostgreSQL local; a app roda via npm nesta fase.
 

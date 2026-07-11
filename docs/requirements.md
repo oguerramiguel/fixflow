@@ -106,8 +106,39 @@ Requisitos nao funcionais reforcados nesta fase:
 - RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
   obrigatorios.
 
-ServiceOrder, diagnostico, orcamento, timeline e portal publico continuam fora
+Diagnostic, orcamento, portal publico e acompanhamento publico continuam fora
 do escopo implementado.
+
+## Status da Fase 4
+
+A Fase 4 implementa gerenciamento inicial de ServiceOrder autenticado e
+multi-tenant.
+
+Requisitos funcionais atendidos nesta fase:
+
+- RF005: abertura de ordens de servico a partir de Equipment validado dentro da
+  Organization.
+- RF006: registro do problema relatado pelo cliente com validacao centralizada.
+- RF011: controle de status por workflow server-side e transicoes validas.
+- RF012: timeline inicial e timeline de mudanca de status geradas server-side.
+- RF014: tenant isolation aplicado nas operacoes de ServiceOrder e timeline.
+
+Requisitos funcionais parcialmente preparados nesta fase:
+
+- RF013: `publicCode` nao previsivel ja e gerado e persistido como unique, mas o
+  acompanhamento publico ainda nao foi implementado.
+
+Requisitos nao funcionais reforcados nesta fase:
+
+- RNF004: acesso a dados de ServiceOrder organizado em repository concreto.
+- RNF005: consultas de ServiceOrder e timeline filtradas por `organizationId`.
+- RNF007: testes de workflow, validacao, services, repositories, delivery,
+  concorrencia e isolamento por tenant.
+- RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
+  obrigatorios.
+
+Diagnostic, Quote, portal publico, acompanhamento publico, PDF e integracoes
+externas continuam fora do escopo implementado.
 
 ## Fora do escopo inicial
 

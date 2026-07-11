@@ -143,12 +143,20 @@ export default async function CustomerDetailsPage({
                         {formatDate(equipment.createdAt)}
                       </td>
                       <td className="px-4 py-4 align-top text-sm">
-                        <Link
-                          href={`/app/equipment/${equipment.id}/edit`}
-                          className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-                        >
-                          Editar
-                        </Link>
+                        <div className="flex flex-wrap gap-3">
+                          <Link
+                            href={`/app/equipment/${equipment.id}/service-orders/new`}
+                            className="font-semibold text-slate-950 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                          >
+                            Abrir OS
+                          </Link>
+                          <Link
+                            href={`/app/equipment/${equipment.id}/edit`}
+                            className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                          >
+                            Editar
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

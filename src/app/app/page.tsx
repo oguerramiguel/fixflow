@@ -13,7 +13,7 @@ export default async function AppPage() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
         <Link
           href="/app/customers"
           className="rounded-lg border border-slate-200 bg-white p-5 transition hover:border-emerald-300 hover:bg-emerald-50/40 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
@@ -35,6 +35,18 @@ export default async function AppPage() {
           </span>
           <span className="mt-2 block text-sm leading-6 text-slate-600">
             Controle de equipamentos vinculados aos clientes.
+          </span>
+        </Link>
+
+        <Link
+          href="/app/service-orders"
+          className="rounded-lg border border-slate-200 bg-white p-5 transition hover:border-emerald-300 hover:bg-emerald-50/40 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+        >
+          <span className="text-lg font-semibold text-slate-950">
+            Ordens de servico
+          </span>
+          <span className="mt-2 block text-sm leading-6 text-slate-600">
+            Abertura, status e historico de atendimento.
           </span>
         </Link>
       </div>

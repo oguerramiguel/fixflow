@@ -37,8 +37,6 @@ export function assertServiceOrderStatusTransition(
   nextStatus: ServiceOrderStatus
 ): void {
   if (!canTransitionServiceOrderStatus(currentStatus, nextStatus)) {
-    throw new DomainError(
-      `Service order cannot transition from ${currentStatus} to ${nextStatus}.`
-    );
+    throw new DomainError("Transicao de status invalida para a ordem de servico.");
   }
 }

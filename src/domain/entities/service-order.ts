@@ -11,3 +11,9 @@ export const serviceOrderStatuses = [
 ] as const;
 
 export type ServiceOrderStatus = (typeof serviceOrderStatuses)[number];
+
+export function isServiceOrderStatus(
+  value: string
+): value is ServiceOrderStatus {
+  return serviceOrderStatuses.includes(value as ServiceOrderStatus);
+}

@@ -52,6 +52,19 @@ associacao ou atualizacao.
 Alteracoes em queries tenant-aware exigem testes de isolamento por
 Organization.
 
+## ServiceOrder
+
+- `ServiceOrder.customerId` deve ser derivado do Equipment validado dentro do
+  tenant durante a criacao da OS.
+- Status de ServiceOrder nunca deve ser alterado arbitrariamente.
+- Transicoes de status usam regra de workflow server-side, sempre com o status
+  atual carregado do banco.
+- Mudanca de status e criacao de timeline devem ser atomicas.
+- Operacoes tenant-aware de ServiceOrder e timeline sempre filtram
+  `organizationId`.
+- Mudancas no workflow exigem testes e atualizacao de
+  `docs/service-order-workflow.md`.
+
 ## Autenticacao
 
 - `passwordHash` nunca deve ser retornado em DTOs, props ou respostas HTTP.

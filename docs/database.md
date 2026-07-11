@@ -120,17 +120,78 @@ As consultas implementadas nesta fase usam os indices existentes:
 
 Nenhuma alteracao de schema ou migration foi necessaria nesta fase.
 
+## ServiceOrder na Fase 4
+
+ServiceOrder passou a ser usada pela aplicacao para abertura, listagem, busca,
+filtro por status, detalhes e transicoes controladas.
+
+Ela possui `organizationId`, `customerId` e `equipmentId`. A redundancia de
+`customerId + equipmentId` e intencional: a ordem precisa consultar rapidamente
+o cliente e o equipamento relacionados, enquanto Equipment continua pertencendo
+a Customer.
+
+Na criacao, o browser informa somente `equipmentId` e `reportedIssue`. O service
+carrega Equipment por `equipmentId + context.organizationId` e deriva
+`ServiceOrder.customerId` de `Equipment.customerId`. O schema reforca que
+ServiceOrder.customer e ServiceOrder.equipment pertencem ao mesmo
+`organizationId` por relacoes compostas:
+
+- `[customerId, organizationId] -> Customer[id, organizationId]`;
+- `[equipmentId, organizationId] -> Equipment[id, organizationId]`.
+
+O schema nao possui uma constraint composta garantindo que
+`ServiceOrder.customerId` seja exatamente o Customer proprietario do Equipment.
+Nesta fase, esse invariante e garantido pela aplicacao durante a criacao,
+somado aos filtros tenant-aware e as constraints compostas existentes.
+
+As consultas implementadas usam os indices existentes:
+
+- `ServiceOrder_organizationId_idx` para escopo por tenant;
+- `ServiceOrder_organizationId_customerId_idx` para futuras consultas por
+  Customer;
+- `ServiceOrder_organizationId_equipmentId_idx` para futuras consultas por
+  Equipment;
+- `ServiceOrder_organizationId_status_idx` para filtro de status;
+- `ServiceOrder_organizationId_createdAt_idx` para ordenacao por abertura;
+- `ServiceOrder_publicCode_key` para unicidade global do codigo publico.
+
+Busca de OS usa filtros Prisma sobre `publicCode`, `Customer.name`,
+`Equipment.brand`, `Equipment.model` e `Equipment.serialNumber`, sempre com
+`organizationId`.
+
+## ServiceOrderTimeline na Fase 4
+
+ServiceOrderTimeline registra eventos server-side da OS. Nesta fase os tipos
+usados sao strings centralizadas no dominio:
+
+- `SERVICE_ORDER_CREATED`;
+- `STATUS_CHANGED`.
+
+Leituras de timeline usam `organizationId + serviceOrderId` e ordenam por
+`createdAt asc` com `id asc` como desempate. Criacoes de timeline sempre forcam
+`organizationId` do contexto confiavel.
+
+A criacao da OS e do evento inicial ocorre na mesma transacao Prisma. A mudanca
+de status e o evento `STATUS_CHANGED` tambem ocorrem na mesma transacao.
+
+Concorrencia de status usa update otimista sem campo `version`: o update filtra
+por `id + organizationId + status atual esperado`. Se nenhuma linha e alterada,
+a aplicacao retorna conflito e nao cria timeline.
+
+Nenhuma alteração de schema ou migration foi necessária na Fase 4.
+
 ## Estrategia de publicCode
 
 `ServiceOrder.publicCode` sera usado futuramente para acompanhamento publico da
-OS. Ele nao deve ser ID incremental nem derivado do ID interno. A estrategia
-inicial e gerar um codigo com prefixo `FF-` e 10 caracteres aleatorios usando
-alfabeto sem caracteres ambiguos.
+OS e ja e gerado na abertura de ordens. Ele nao deve ser ID incremental nem
+derivado do ID interno. A estrategia atual gera um codigo com prefixo `FF-` e
+10 caracteres aleatorios usando alfabeto sem caracteres ambiguos.
 
 Exemplo conceitual: `FF-7KQ4M2X9AB`.
 
-O campo e unico globalmente. Em caso raro de colisao, o service futuro deve
-gerar novo codigo e tentar novamente dentro de uma transacao segura.
+O campo e unico globalmente. Em caso raro de colisao especifica em
+`publicCode`, o service gera novo codigo e tenta novamente ate 5 vezes. P2002
+nao relacionado a `publicCode` nao e tratado como colisao.
 
 ## Diagrama ER simplificado
 

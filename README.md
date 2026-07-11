@@ -1,157 +1,315 @@
 # FixFlow
 
-FixFlow e uma plataforma web para gerenciamento de assistencias tecnicas de
-notebooks e computadores.
+![Status: MVP local](https://img.shields.io/badge/status-MVP%20local-blue)
+![TypeScript: strict](https://img.shields.io/badge/TypeScript-strict-3178c6)
+![Tests: 220](https://img.shields.io/badge/tests-220%20passing-brightgreen)
 
-O projeto organiza o ciclo completo de atendimento tecnico: cadastro do cliente,
-cadastro do equipamento, abertura da ordem de servico, diagnostico, orcamento,
-manutencao, testes finais, conclusao e acompanhamento pelo cliente.
+Plataforma web multi-tenant para gestao de assistencias tecnicas de notebooks e
+computadores.
 
-## Contexto de portfolio
+**Status do projeto:** em desenvolvimento, com MVP funcional local.
 
-Este repositorio e construido como um projeto profissional de Engenharia de
-Software. A meta e demonstrar arquitetura organizada, regras de negocio
-testaveis, modelagem de dados com isolamento por tenant, qualidade de codigo,
-testes automatizados e documentacao tecnica suficiente para discussao em
-entrevistas.
+## Visao geral
 
-## Status atual
+FixFlow organiza o ciclo de atendimento tecnico de pequenas assistencias: cliente,
+equipamento, ordem de servico, diagnostico, orcamento, decisao do cliente e
+historico operacional. O projeto foi construido como portfolio tecnico para
+demonstrar modelagem de dominio, isolamento por tenant, autenticacao server-side,
+transacoes e testes automatizados em uma aplicacao web realista.
 
-Fase 6: portal publico de acompanhamento da ordem de servico por `publicCode`.
+O MVP roda localmente e nao possui deploy publico nesta fase.
 
-Implementado ate aqui:
+## Problema resolvido
 
-- base Next.js com App Router;
-- TypeScript strict;
-- Tailwind CSS;
-- Prisma configurado para PostgreSQL;
-- schema inicial do dominio;
-- migration inicial;
-- Docker Compose para PostgreSQL local;
-- endpoint `GET /api/health`;
-- testes unitarios do health check e de regras iniciais de dominio;
-- autenticacao por email e senha para usuarios internos;
-- hashing de senha com `bcryptjs`;
-- sessao opaca persistida no PostgreSQL;
-- cookie HTTP-only para sessao;
-- login, logout e pagina interna protegida em `/app`;
-- endpoint autenticado `GET /api/me`;
-- contexto autenticado com `organizationId` derivado do User persistido;
-- base simples de autorizacao por role;
-- bootstrap de desenvolvimento por variaveis de ambiente;
-- listagem, busca, detalhes, cadastro e edicao de clientes;
-- listagem, busca, detalhes, cadastro e edicao de equipamentos;
-- cadastro de equipamento vinculado a cliente validado dentro do tenant;
-- visualizacao de equipamentos vinculados a um cliente;
-- abertura de ordem de servico a partir de Equipment validado dentro do tenant;
-- derivacao server-side de Customer a partir do Equipment da OS;
-- geracao server-side de `publicCode` nao previsivel;
-- listagem, busca, filtro por status, paginacao e detalhes de ordens de
-  servico;
-- workflow server-side de status de ServiceOrder;
-- cancelamento protegido por role OWNER ou ADMIN;
-- timeline inicial e eventos de mudanca de status;
-- concorrencia otimista simples para transicoes de status;
-- registro e edicao de Diagnostic enquanto a OS esta em diagnostico;
-- timeline de Diagnostic registrado e atualizado;
-- criacao explicita de Quote em rascunho;
-- um Quote por ServiceOrder nesta fase;
-- criacao, edicao e remocao de QuoteItems somente em DRAFT;
-- parser monetario server-side com `Prisma.Decimal`;
-- subtotal e total derivados server-side;
-- DTOs monetarios como strings canonicas;
-- exibicao BRL a partir de strings monetarias;
-- envio logico de Quote por OWNER ou ADMIN;
-- aprovacao interna de Quote por OWNER ou ADMIN;
-- rejeicao interna de Quote por OWNER ou ADMIN;
-- portal publico em `/track/[publicCode]`;
-- consulta publica por `publicCode` com DTO minimo;
-- exibicao publica de status, equipamento, problema relatado, quote publico e
-  timeline publica;
-- ocultacao publica de Quote em `DRAFT`;
-- aprovacao publica de Quote `SENT`;
-- rejeicao publica de Quote `SENT`;
-- atualizacao atomica de Quote, ServiceOrder e timeline no fluxo publico;
-- integracao atomica entre Quote e ServiceOrder;
-- concorrencia otimista para transicoes comerciais de Quote e ServiceOrder;
-- repositories e services tenant-aware para Customer e Equipment;
-- repository e service tenant-aware para ServiceOrder;
-- repositories e services tenant-aware para Diagnostic e Quote;
-- validacao centralizada de Customer e Equipment;
-- validacao centralizada de ServiceOrder;
-- validacao centralizada de Diagnostic, QuoteItem, quantity e money input;
-- checkpoint de senha contra truncation silenciosa do bcrypt;
-- documentacao tecnica de autenticacao, Customer, Equipment, ServiceOrder,
-  Diagnostic e Quote.
+Assistencias pequenas frequentemente acompanham atendimentos em planilhas,
+mensagens soltas ou papel. Isso torna dificil responder perguntas simples:
 
-Ainda nao implementado:
+- qual equipamento esta em diagnostico;
+- qual orcamento esta aguardando aprovacao;
+- qual cliente aprovou ou rejeitou o servico;
+- qual foi o historico de status de uma ordem de servico;
+- quais dados pertencem a cada assistencia em um contexto multiempresa.
 
-- dashboard funcional;
-- envio de e-mails;
-- PDF, pagamentos ou integracoes externas.
+FixFlow centraliza esse fluxo em uma aplicacao web com regras de negocio
+server-side e dados isolados por `Organization`.
+
+## Funcionalidades implementadas
+
+- Autenticacao interna por email e senha.
+- Sessao opaca persistida no PostgreSQL.
+- Cookie de sessao HTTP-only.
+- Logout com invalidacao server-side da sessao.
+- Contexto autenticado com `userId`, `organizationId` e `role`.
+- `Organization` como tenant.
+- Autorizacao basica por role.
+- Customer CRUD sem delete.
+- Equipment CRUD sem delete.
+- Cadastro de Equipment vinculado a Customer validado dentro do tenant.
+- ServiceOrder com abertura, listagem, busca, filtro, detalhes e status.
+- `publicCode` nao sequencial para acompanhamento publico.
+- Workflow server-side de status.
+- Timeline operacional de ServiceOrder.
+- Diagnostic unico por ServiceOrder dentro da Organization.
+- Quote unico por ServiceOrder dentro da Organization nesta fase.
+- QuoteItem mutavel apenas enquanto Quote esta em `DRAFT`.
+- Calculo monetario com `Prisma.Decimal`.
+- DTOs monetarios como strings decimais canonicas.
+- Envio logico de orcamento.
+- Aprovacao e rejeicao interna de orcamento.
+- Portal publico por `publicCode` em `/track/[publicCode]`.
+- Aprovacao e rejeicao publica de Quote `SENT`.
+- DTO publico minimo, separado dos DTOs internos.
+- Isolamento por tenant em services e repositories.
+- Testes automatizados de dominio, services, repositories, actions e APIs.
+
+## Matriz de funcionalidades
+
+| Area | Status | Observacao |
+| --- | --- | --- |
+| Autenticacao interna | Implementado | Email/senha, bcryptjs, sessao opaca e cookie HTTP-only. |
+| Multi-tenancy | Implementado | `Organization` representa o tenant; queries internas usam `organizationId`. |
+| Clientes | Implementado | Listagem, busca, detalhes, criacao e edicao; sem delete. |
+| Equipamentos | Implementado | Listagem, busca, detalhes, criacao e edicao; sem delete. |
+| Ordens de servico | Implementado | Abertura, listagem, filtro por status, detalhes, workflow e timeline. |
+| Diagnostico | Implementado | Registro/edicao enquanto a OS esta em diagnostico. |
+| Orcamento | Implementado | Quote em rascunho, itens, envio logico, aprovacao/rejeicao. |
+| Portal publico | Implementado | Consulta por `publicCode` e decisao publica de Quote enviado. |
+| Dashboard | Nao implementado | A pagina interna atual e uma area de operacao com links. |
+| E-mail/WhatsApp | Nao implementado | O envio do orcamento e apenas registro logico. |
+| PDF/pagamento | Nao implementado | Fora do escopo do MVP atual. |
+| Deploy/CI | Nao implementado | Projeto validado localmente. |
+
+## Destaques tecnicos
+
+- Multi-tenancy com `Organization`.
+- Isolamento de dados por `organizationId` em operacoes internas.
+- `organizationId` confiavel resolvido no servidor a partir do User persistido.
+- DTOs internos e publicos separados.
+- Autenticacao com sessao opaca.
+- Cookie HTTP-only.
+- `bcryptjs` com protecao contra truncation silenciosa de senhas longas/UTF-8.
+- Repositories tenant-aware.
+- Workflows de dominio para ServiceOrder e Quote.
+- Transacoes Prisma para criacao de OS + timeline e fluxos comerciais.
+- Concorrencia otimista por status esperado.
+- Timeline/auditoria operacional.
+- `publicCode` nao sequencial como capability URL limitada.
+- Calculo monetario com `Prisma.Decimal`.
+- Money DTO como string canonica com duas casas decimais.
+- Validacoes centralizadas de entrada e dominio.
+- Testes automatizados cobrindo regras, services, repositories, actions e APIs.
 
 ## Stack
 
-Versoes principais instaladas e registradas no `package-lock.json`:
+Versoes reais registradas em `package.json` e `package-lock.json`:
 
 - Next.js 16.2.10
 - React 19.1.0
 - TypeScript 5.8.3
 - Tailwind CSS 3.4.17
 - Prisma 6.10.1
-- bcryptjs 3.0.2
+- PostgreSQL 16 via Docker Compose
 - Vitest 3.2.7
 - ESLint 9.29.0
-- jiti 2.4.2 para o seed TypeScript
-- npm 10.9.2 para o lockfile
-- PostgreSQL 16 via Docker Compose
-
-O projeto usa `overrides` do npm para manter o `postcss` transitive do Next.js
-em versao corrigida quando necessario.
+- bcryptjs 3.0.2
+- npm 10.9.2
 
 ## Arquitetura resumida
 
-O projeto usa uma arquitetura simples em camadas:
+O projeto usa Next.js App Router e uma separacao simples em camadas:
 
-- `src/app`: rotas, layouts e paginas do Next.js;
-- `src/components`: componentes de apresentacao;
-- `src/lib`: configuracoes e utilitarios compartilhados;
-- `src/domain`: entidades, regras de dominio e erros testaveis;
-- `src/server/db`: Prisma Client centralizado;
-- `src/server/repositories`: repositories concretos e tenant-aware;
-- `src/server/services`: services de aplicacao server-side;
-- `prisma`: schema e migrations do banco;
-- `tests`: testes automatizados;
-- `docs`: documentacao de produto, arquitetura, banco e workflow.
+- `src/app`: rotas, layouts, paginas, route handlers e Server Actions.
+- `src/components`: componentes de apresentacao.
+- `src/domain`: entidades, validacoes, workflows e erros de dominio.
+- `src/server/auth`: autenticacao, sessao, cookie e autorizacao.
+- `src/server/db`: Prisma Client centralizado.
+- `src/server/repositories`: acesso a dados tenant-aware.
+- `src/server/services`: casos de uso server-side.
+- `prisma`: schema, migrations e seed.
+- `tests`: testes automatizados.
+- `docs`: documentacao tecnica e de portfolio.
 
-Regras de negocio nao devem ser implementadas diretamente em componentes React.
-Consultas de entidades multi-tenant recebem o contexto da `Organization` para
-preservar o isolamento logico entre tenants.
+Componentes React nao concentram regras complexas de dominio. Regras sensiveis,
+como mudancas de status, calculo monetario, autorizacao e isolamento por tenant,
+sao revalidadas no servidor.
 
-## Requisitos para desenvolvimento
+## Fluxo principal do sistema
 
-- Node.js compativel com Next.js 16;
-- npm;
-- Docker e Docker Compose para PostgreSQL local;
-- Git.
+1. Usuario interno faz login.
+2. Sistema resolve `AuthenticatedContext` a partir da sessao.
+3. Usuario cadastra cliente.
+4. Usuario cadastra equipamento vinculado ao cliente.
+5. Usuario abre ordem de servico para o equipamento.
+6. Sistema gera `publicCode` nao sequencial e timeline inicial.
+7. OS avanca para diagnostico.
+8. Usuario registra Diagnostic.
+9. Usuario cria Quote e adiciona QuoteItems.
+10. Sistema calcula subtotal e total com Decimal.
+11. Usuario OWNER ou ADMIN marca o Quote como enviado.
+12. Cliente acessa o portal publico por `publicCode`.
+13. Cliente aprova ou rejeita o Quote enviado.
+14. Sistema atualiza Quote, ServiceOrder e timeline de forma atomica.
 
-## Configuracao do ambiente
+## Portal publico
 
-1. Instale as dependencias:
+O portal publico fica em:
 
-```bash
-npm install
+```text
+/track/[publicCode]
 ```
 
-2. Copie o arquivo de exemplo de ambiente:
+Ele permite acompanhar uma unica ordem de servico por `publicCode`, sem login do
+cliente. O DTO publico e minimo e nao expoe Customer, email, telefone, documento,
+IDs internos, `organizationId`, `passwordHash`, `tokenHash` ou objetos Prisma
+completos.
+
+Quote em `DRAFT` nao aparece publicamente. A aprovacao/rejeicao publica so fica
+disponivel quando o Quote esta em `SENT` e a ServiceOrder esta em
+`WAITING_FOR_APPROVAL`.
+
+## Seguranca e multi-tenancy
+
+- `organizationId` nao vem do browser para autorizacao ou isolamento.
+- O tenant vem do User autenticado persistido no servidor.
+- Repositories internos filtram recursos por `organizationId`.
+- IDs de recursos recebidos do browser sao revalidados dentro do tenant.
+- `publicCode` nao autoriza operacoes internas nem listagem de recursos.
+- O portal publico nao usa `AuthenticatedContext`.
+- O DTO publico nao expoe dados de Customer nem IDs internos.
+- Senhas nao sao armazenadas em texto puro.
+- Tokens brutos de sessao nao sao persistidos no banco.
+- Cookies de sessao usam `httpOnly`.
+- Valores sensiveis nao devem usar prefixo `NEXT_PUBLIC`.
+- `.env` nao deve ser versionado.
+
+Essas medidas reduzem riscos no escopo do MVP local, mas nao substituem hardening
+de producao, rate limiting, observabilidade, revisao de seguranca e politicas
+operacionais.
+
+## Testes
+
+Comando executado:
+
+```bash
+npm run test
+```
+
+Resultado real da ultima execucao local da Fase 7:
+
+- 32 arquivos de teste.
+- 220 testes passando.
+
+A suite cobre:
+
+- validacoes de dominio;
+- publicCode;
+- workflow de ServiceOrder;
+- workflow de Quote;
+- parser monetario com Decimal;
+- politica e hashing de senha;
+- autenticacao e contexto autenticado;
+- autorizacao por role;
+- Customer e Equipment services/repositories/actions;
+- ServiceOrder service/repository/actions;
+- Diagnostic e Quote services/repositories/actions;
+- portal publico por `publicCode`;
+- aprovacao/rejeicao publica de Quote;
+- DTO publico minimo e isolamento de dados.
+
+Validacoes adicionais usadas no projeto:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm run prisma:validate
+npm run prisma:format
+```
+
+## Como rodar localmente
+
+1. Clone o repositorio:
+
+```bash
+git clone <repository-url>
+```
+
+2. Entre na pasta:
+
+```bash
+cd FixFlow
+```
+
+3. Crie o arquivo `.env` a partir do exemplo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Em Bash/WSL:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Ajuste `DATABASE_URL` se necessario.
+4. Preencha a `DATABASE_URL` local compativel com o `docker-compose.yml`:
+
+```env
+DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_dev?schema=public"
+```
+
+5. Suba o PostgreSQL:
+
+```bash
+docker compose up -d
+```
+
+6. Instale as dependencias:
+
+```bash
+npm install
+```
+
+7. Aplique as migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+8. Gere o Prisma Client quando necessario:
+
+```bash
+npx prisma generate
+```
+
+9. Rode o seed de desenvolvimento:
+
+```bash
+npm run db:seed
+```
+
+10. Rode a aplicacao:
+
+```bash
+npm run dev
+```
+
+11. Abra:
+
+```text
+http://localhost:3000
+```
+
+Em PowerShell com politica restritiva de scripts, use os executaveis `.cmd`:
+
+```powershell
+npm.cmd run dev
+npx.cmd prisma migrate dev
+```
 
 ## Variaveis de ambiente
+
+Variaveis esperadas no `.env` local:
 
 ```env
 DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_dev?schema=public"
@@ -163,147 +321,148 @@ FIXFLOW_BOOTSTRAP_USER_EMAIL=""
 FIXFLOW_BOOTSTRAP_USER_PASSWORD=""
 ```
 
-Use apenas credenciais locais de desenvolvimento. Nao armazene secrets reais no
-repositorio e nao preencha `.env.example` com credenciais reutilizaveis.
+Nao use secrets reais no repositorio. O arquivo `.env.example` deve permanecer
+apenas como modelo.
 
-## Execucao com Docker
+## Usuario de desenvolvimento
 
-Nesta fase, o Docker Compose fornece somente o PostgreSQL de desenvolvimento.
-A aplicacao Next.js roda localmente com npm para manter o ciclo de
-desenvolvimento simples.
+O comando `npm run db:seed` cria ou atualiza uma Organization e um usuario OWNER
+local usando:
 
-```bash
-docker compose up -d
+- `FIXFLOW_BOOTSTRAP_ORGANIZATION_NAME`
+- `FIXFLOW_BOOTSTRAP_ORGANIZATION_SLUG`
+- `FIXFLOW_BOOTSTRAP_USER_NAME`
+- `FIXFLOW_BOOTSTRAP_USER_EMAIL`
+- `FIXFLOW_BOOTSTRAP_USER_PASSWORD`
+
+Exemplo ficticio para ambiente local:
+
+```env
+FIXFLOW_BOOTSTRAP_ORGANIZATION_NAME="FixFlow Demo"
+FIXFLOW_BOOTSTRAP_ORGANIZATION_SLUG="fixflow-demo"
+FIXFLOW_BOOTSTRAP_USER_NAME="Admin Local"
+FIXFLOW_BOOTSTRAP_USER_EMAIL="admin@fixflow.local"
+FIXFLOW_BOOTSTRAP_USER_PASSWORD="ChangeMeLocal123!"
 ```
 
-Depois que o banco estiver saudavel:
+Esse usuario e criado localmente pelo seed. Nao reutilize esse exemplo como
+senha real.
 
-```bash
-npm run prisma:migrate
-npm run db:seed
-```
+## Scripts uteis
 
-O seed cria ou atualiza uma Organization e um usuario OWNER para
-desenvolvimento usando somente variaveis de ambiente. Ele nao roda durante
-build, start ou acesso ao login.
+Scripts reais do `package.json`:
 
-## Comandos npm
+| Script | Uso |
+| --- | --- |
+| `npm run dev` | Inicia o servidor de desenvolvimento Next.js. |
+| `npm run build` | Gera build de producao da aplicacao. |
+| `npm run start` | Inicia a aplicacao buildada. |
+| `npm run lint` | Executa ESLint no repositorio. |
+| `npm run typecheck` | Executa TypeScript sem emitir arquivos. |
+| `npm run test` | Executa Vitest uma vez. |
+| `npm run test:watch` | Executa Vitest em modo watch. |
+| `npm run db:seed` | Executa o seed de desenvolvimento. |
+| `npm run prisma:generate` | Gera Prisma Client. |
+| `npm run prisma:migrate` | Executa `prisma migrate dev`. |
+| `npm run prisma:validate` | Valida o schema Prisma. |
+| `npm run prisma:format` | Formata o schema Prisma. |
 
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run typecheck
-npm run test
-npm run test:watch
-npm run db:seed
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:validate
-npm run prisma:format
-```
+## Fluxo sugerido para demonstracao
 
-## Fluxo local conceitual
+1. Fazer login com o usuario criado pelo seed.
+2. Criar cliente.
+3. Criar equipamento vinculado ao cliente.
+4. Abrir ordem de servico para o equipamento.
+5. Avancar a OS para diagnostico.
+6. Registrar Diagnostic.
+7. Criar Quote.
+8. Adicionar QuoteItems.
+9. Marcar o Quote como enviado.
+10. Abrir o portal publico com o `publicCode`.
+11. Aprovar ou rejeitar o Quote pelo portal publico.
+12. Conferir status e timeline na area interna.
 
-1. Copie `.env.example` para `.env`.
-2. Preencha `DATABASE_URL` e as variaveis `FIXFLOW_BOOTSTRAP_*`.
-3. Inicie o PostgreSQL local com Docker Compose.
-4. Aplique as migrations com `npm run prisma:migrate`.
-5. Execute `npm run db:seed`.
-6. Inicie a aplicacao com `npm run dev`.
-7. Acesse `/login`.
+## Screenshots
 
-## Testes
+Adicionar prints reais da aplicacao aqui antes de publicar o repositorio como
+portfolio. Nao ha screenshots versionados nesta fase.
 
-```bash
-npm run test
-```
+Sugestoes de telas para capturar estao em `docs/portfolio.md`.
 
-Os testes atuais cobrem:
-
-- resposta do endpoint `GET /api/health`;
-- formato do codigo publico de ordens de servico;
-- transicoes iniciais permitidas para ordens de servico.
-- normalizacao de email;
-- politica e hashing de senha;
-- token de sessao;
-- login;
-- resolucao de contexto autenticado;
-- autorizacao por role;
-- DTO seguro de `GET /api/me`.
-- validacao de Customer;
-- validacao de Equipment;
-- repositories tenant-aware de Customer e Equipment;
-- services de Customer e Equipment;
-- Server Actions de Customer e Equipment;
-- validacao, workflow, labels e timeline de ServiceOrder;
-- validacao de Diagnostic;
-- parser monetario Decimal e validacao de quantity;
-- validacao de QuoteItem;
-- workflow de Quote;
-- repository tenant-aware de ServiceOrder;
-- repositories tenant-aware de Diagnostic e Quote;
-- service de ServiceOrder com publicCode retry, transacao, autorizacao e
-  concorrencia otimista;
-- services de Diagnostic e Quote com transacoes, autorizacao, tenant isolation,
-  concorrencia otimista e calculo monetario Decimal;
-- service e repository publicos para acompanhamento por `publicCode`;
-- DTO publico minimo sem Customer, IDs internos ou `organizationId`;
-- aprovacao/rejeicao publica de Quote com transacao e concorrencia otimista;
-- Server Actions de ServiceOrder;
-- Server Actions de Diagnostic e Quote;
-- Server Actions publicas de decisao do Quote;
-- checkpoint de truncation do bcrypt.
-
-## Estrutura de diretorios
+## Estrutura do projeto
 
 ```text
 src/
   app/
   components/
   domain/
-    entities/
-    errors/
-    services/
   lib/
   server/
-    db/
-    repositories/
-    services/
 prisma/
   migrations/
+  schema.prisma
+  seed.ts
 tests/
 docs/
 ```
 
 ## Documentacao tecnica
 
+- `docs/requirements.md`
+- `docs/architecture.md`
+- `docs/database.md`
 - `docs/authentication.md`
 - `docs/customer-equipment.md`
 - `docs/service-orders.md`
 - `docs/service-order-workflow.md`
 - `docs/diagnostic-quotes.md`
 - `docs/public-portal.md`
-- `docs/architecture.md`
-- `docs/database.md`
-- `docs/requirements.md`
+- `docs/portfolio.md`
+- `docs/manual-qa.md`
+- `docs/local-development.md`
+- `docs/linkedin-post.md`
 
 ## Roadmap
 
-- [x] Fundacao Next.js, TypeScript, Tailwind, Prisma e testes
-- [x] Modelagem inicial do dominio
-- [x] Health check
-- [x] Base de autenticacao
-- [x] Contexto de Organization em requests autenticadas
-- [x] CRUD de clientes sem exclusao
-- [x] CRUD de equipamentos sem exclusao
-- [x] Ordens de servico
-- [x] Timeline inicial e eventos de status da ordem de servico
-- [x] Diagnostico tecnico
-- [x] Orcamentos internos
-- [x] Calculo monetario com Decimal
-- [x] Ciclo de vida do orcamento integrado a ServiceOrder
-- [x] Acompanhamento publico da OS
-- [x] Aprovacao e rejeicao publica de orcamento
-- [ ] Evolucao para controles SaaS multiempresa
+Implementado:
+
+- autenticacao interna;
+- clientes e equipamentos;
+- ordens de servico;
+- diagnostico e orcamento;
+- portal publico por `publicCode`.
+
+Proximos passos possiveis:
+
+- proposta/PDF;
+- envio externo controlado do link publico;
+- rate limiting no portal publico e login;
+- auditoria mais detalhada;
+- deploy;
+- CI;
+- testes E2E;
+- melhorias visuais;
+- observabilidade;
+- hardening de producao.
+
+Nao ha datas prometidas para esses itens.
+
+## Limitacoes atuais
+
+- Sem deploy publico.
+- Sem envio real de email, WhatsApp ou SMS.
+- Sem PDF.
+- Sem pagamento.
+- Sem rate limiting.
+- Sem CI/CD.
+- Sem testes E2E.
+- Sem dashboard funcional.
+- Portal publico baseado em `publicCode` como capability URL.
+- Docker Compose fornece PostgreSQL local; nao e um setup completo de producao.
+
+Esses pontos representam o escopo atual do MVP, nao funcionalidades simuladas.
+
+## Autor / Portfolio
+
+Projeto desenvolvido como portfolio tecnico. Antes de publicar, adicione links
+reais de GitHub, LinkedIn e portfolio pessoal nesta secao.

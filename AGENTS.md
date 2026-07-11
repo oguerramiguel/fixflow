@@ -22,6 +22,9 @@ atendimento.
 - Atualize testes quando comportamento mudar.
 - Atualize `docs/` quando decisoes arquiteturais mudarem.
 - Nao armazene secrets reais no repositorio.
+- Documentacao de portfolio deve refletir apenas funcionalidades realmente
+  implementadas; nao afirme deploy, envio externo, screenshots ou recursos fora
+  do escopo sem evidencia real.
 
 ## Validacao obrigatoria
 

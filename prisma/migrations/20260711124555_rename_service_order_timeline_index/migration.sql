@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "ServiceOrderTimeline_organizationId_serviceOrderId_createdAt_id" RENAME TO "ServiceOrderTimeline_organizationId_serviceOrderId_createdA_idx";

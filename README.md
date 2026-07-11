@@ -17,7 +17,8 @@ entrevistas.
 
 ## Status atual
 
-Fase 4: gerenciamento inicial autenticado e multi-tenant de ordens de servico.
+Fase 5: diagnostico tecnico e orcamento interno integrados ao workflow da ordem
+de servico.
 
 Implementado ate aqui:
 
@@ -52,19 +53,36 @@ Implementado ate aqui:
 - cancelamento protegido por role OWNER ou ADMIN;
 - timeline inicial e eventos de mudanca de status;
 - concorrencia otimista simples para transicoes de status;
+- registro e edicao de Diagnostic enquanto a OS esta em diagnostico;
+- timeline de Diagnostic registrado e atualizado;
+- criacao explicita de Quote em rascunho;
+- um Quote por ServiceOrder nesta fase;
+- criacao, edicao e remocao de QuoteItems somente em DRAFT;
+- parser monetario server-side com `Prisma.Decimal`;
+- subtotal e total derivados server-side;
+- DTOs monetarios como strings canonicas;
+- exibicao BRL a partir de strings monetarias;
+- envio logico de Quote por OWNER ou ADMIN;
+- aprovacao interna de Quote por OWNER ou ADMIN;
+- rejeicao interna de Quote por OWNER ou ADMIN;
+- integracao atomica entre Quote e ServiceOrder;
+- concorrencia otimista para transicoes comerciais de Quote e ServiceOrder;
 - repositories e services tenant-aware para Customer e Equipment;
 - repository e service tenant-aware para ServiceOrder;
+- repositories e services tenant-aware para Diagnostic e Quote;
 - validacao centralizada de Customer e Equipment;
 - validacao centralizada de ServiceOrder;
+- validacao centralizada de Diagnostic, QuoteItem, quantity e money input;
 - checkpoint de senha contra truncation silenciosa do bcrypt;
-- documentacao tecnica de autenticacao, Customer, Equipment e ServiceOrder.
+- documentacao tecnica de autenticacao, Customer, Equipment, ServiceOrder,
+  Diagnostic e Quote.
 
 Ainda nao implementado:
 
-- diagnostico e orcamento;
 - dashboard funcional;
 - portal publico do cliente;
 - acompanhamento publico por `publicCode`;
+- aprovacao publica de orcamento;
 - envio de e-mails;
 - PDF, pagamentos ou integracoes externas.
 
@@ -216,10 +234,18 @@ Os testes atuais cobrem:
 - services de Customer e Equipment;
 - Server Actions de Customer e Equipment;
 - validacao, workflow, labels e timeline de ServiceOrder;
+- validacao de Diagnostic;
+- parser monetario Decimal e validacao de quantity;
+- validacao de QuoteItem;
+- workflow de Quote;
 - repository tenant-aware de ServiceOrder;
+- repositories tenant-aware de Diagnostic e Quote;
 - service de ServiceOrder com publicCode retry, transacao, autorizacao e
   concorrencia otimista;
+- services de Diagnostic e Quote com transacoes, autorizacao, tenant isolation,
+  concorrencia otimista e calculo monetario Decimal;
 - Server Actions de ServiceOrder;
+- Server Actions de Diagnostic e Quote;
 - checkpoint de truncation do bcrypt.
 
 ## Estrutura de diretorios
@@ -249,6 +275,7 @@ docs/
 - `docs/customer-equipment.md`
 - `docs/service-orders.md`
 - `docs/service-order-workflow.md`
+- `docs/diagnostic-quotes.md`
 - `docs/architecture.md`
 - `docs/database.md`
 - `docs/requirements.md`
@@ -264,7 +291,9 @@ docs/
 - [x] CRUD de equipamentos sem exclusao
 - [x] Ordens de servico
 - [x] Timeline inicial e eventos de status da ordem de servico
-- [ ] Diagnostico tecnico
-- [ ] Orcamentos
+- [x] Diagnostico tecnico
+- [x] Orcamentos internos
+- [x] Calculo monetario com Decimal
+- [x] Ciclo de vida do orcamento integrado a ServiceOrder
 - [ ] Acompanhamento publico da OS
 - [ ] Evolucao para controles SaaS multiempresa

@@ -13,6 +13,23 @@ export const serviceOrderStatusTransitions = {
   CANCELLED: []
 } as const satisfies Record<ServiceOrderStatus, readonly ServiceOrderStatus[]>;
 
+const specializedServiceOrderTransitionMessages = {
+  "IN_DIAGNOSIS->WAITING_FOR_APPROVAL":
+    "Envie o orcamento para colocar a ordem em espera de aprovacao.",
+  "WAITING_FOR_APPROVAL->APPROVED":
+    "Registre a aprovacao do orcamento para aprovar a ordem de servico."
+} as const;
+
+type SpecializedServiceOrderTransitionKey =
+  keyof typeof specializedServiceOrderTransitionMessages;
+
+function createServiceOrderTransitionKey(
+  currentStatus: ServiceOrderStatus,
+  nextStatus: ServiceOrderStatus
+): `${ServiceOrderStatus}->${ServiceOrderStatus}` {
+  return `${currentStatus}->${nextStatus}`;
+}
+
 export function getAllowedNextServiceOrderStatuses(
   currentStatus: ServiceOrderStatus
 ): ServiceOrderStatus[] {
@@ -39,4 +56,24 @@ export function assertServiceOrderStatusTransition(
   if (!canTransitionServiceOrderStatus(currentStatus, nextStatus)) {
     throw new DomainError("Transicao de status invalida para a ordem de servico.");
   }
+}
+
+export function getSpecializedServiceOrderTransitionMessage(
+  currentStatus: ServiceOrderStatus,
+  nextStatus: ServiceOrderStatus
+): string | undefined {
+  const key = createServiceOrderTransitionKey(currentStatus, nextStatus);
+
+  return specializedServiceOrderTransitionMessages[
+    key as SpecializedServiceOrderTransitionKey
+  ];
+}
+
+export function isServiceOrderTransitionManagedBySpecializedFlow(
+  currentStatus: ServiceOrderStatus,
+  nextStatus: ServiceOrderStatus
+): boolean {
+  return Boolean(
+    getSpecializedServiceOrderTransitionMessage(currentStatus, nextStatus)
+  );
 }

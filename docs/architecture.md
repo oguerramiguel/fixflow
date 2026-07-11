@@ -174,6 +174,57 @@ sequenceDiagram
   Tx->>DB: create status timeline
 ```
 
+Fluxo concreto de Diagnostic implementado na Fase 5:
+
+```mermaid
+sequenceDiagram
+  participant UI
+  participant Action as Server Action
+  participant Context as AuthenticatedContext
+  participant Service as Diagnostic Service
+  participant Repo as Diagnostic repository
+  participant Tx as Prisma transaction
+  participant DB as PostgreSQL
+
+  UI->>Action: serviceOrderId da rota + diagnostico
+  Action->>Context: requireAuthenticatedContext
+  Context->>Service: userId, organizationId, role
+  Service->>Repo: carregar OS por id + organizationId
+  Service->>Service: exigir status IN_DIAGNOSIS
+  Service->>Repo: save Diagnostic com organizationId do contexto
+  Repo->>Tx: abrir transacao
+  Tx->>DB: create/update Diagnostic
+  Tx->>DB: create Diagnostic timeline
+```
+
+Fluxo concreto de Quote DRAFT e calculo monetario:
+
+```mermaid
+sequenceDiagram
+  participant UI
+  participant Action as Server Action
+  participant Context as AuthenticatedContext
+  participant Service as Quote Service
+  participant Money as Money parser
+  participant Repo as Quote repository
+  participant DB as PostgreSQL
+
+  UI->>Action: FormData strings
+  Action->>Context: requireAuthenticatedContext
+  Context->>Service: contexto confiavel
+  Service->>Money: unitPrice string -> canonical string -> Prisma.Decimal
+  Service->>Money: subtotal e total via Decimal
+  Service->>Repo: mutacao tenant-aware
+  Repo->>DB: persistir Decimal(12,2)
+```
+
+Fluxos comerciais de Quote coordenam Quote, ServiceOrder e timeline na mesma
+transacao. Envio altera Quote `DRAFT -> SENT` e ServiceOrder
+`IN_DIAGNOSIS -> WAITING_FOR_APPROVAL`. Aprovacao altera Quote
+`SENT -> APPROVED` e ServiceOrder `WAITING_FOR_APPROVAL -> APPROVED`. Rejeicao
+altera Quote `SENT -> REJECTED` e ServiceOrder
+`WAITING_FOR_APPROVAL -> CANCELLED`.
+
 ## Acesso a dados
 
 O Prisma Client fica centralizado em `src/server/db/prisma.ts`. O arquivo evita
@@ -199,6 +250,10 @@ concretos e foram ampliados na Fase 4:
 - `service-order-repository`: listagem, contagem, detalhes com timeline,
   criacao de OS com timeline inicial e transicao de status com concorrencia
   otimista.
+- `diagnostic-repository`: leitura e save tenant-aware de Diagnostic com
+  timeline atomica.
+- `quote-repository`: leitura de Quote, criacao de DRAFT, mutacoes de itens e
+  transicoes comerciais atomicas com ServiceOrder.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
@@ -221,12 +276,23 @@ regras iniciais para:
 - transicoes permitidas no workflow de ordem de servico.
 - labels e descricoes server-side de timeline para ServiceOrder;
 - validacao de `reportedIssue` e de status de ServiceOrder.
+- validacao de Diagnostic;
+- validacao de QuoteItem, quantity e dinheiro;
+- workflow pequeno de QuoteStatus;
+- calculos monetarios com `Prisma.Decimal`.
 
 Essas regras sao testadas sem depender da interface.
 
 O workflow de ServiceOrder permanece pequeno e explicito. Ele nao usa engine de
-workflow, event sourcing ou CQRS. Nesta fase ele valida apenas transicoes
-estruturais; pre-condicoes de Diagnostic e Quote ficam para fases futuras.
+workflow, event sourcing ou CQRS. A regra estrutural ainda conhece as transicoes
+principais, mas a application layer bloqueia os caminhos genericos que agora
+pertencem a Quote: `IN_DIAGNOSIS -> WAITING_FOR_APPROVAL` e
+`WAITING_FOR_APPROVAL -> APPROVED`.
+
+Valores monetarios entram por `FormData` como string, passam por parser e
+validador, viram string canonica e entao `Prisma.Decimal`. Subtotal e total sao
+derivados com operacoes Decimal. DTOs retornam strings canonicas, e a UI formata
+BRL apenas para apresentacao.
 
 ## Tratamento de erros
 
@@ -311,6 +377,12 @@ transicao de status, o service carrega o status atual do banco e o repository
 atualiza por `id + organizationId + status esperado`; se a contagem for zero,
 o service retorna `ConflictError` e a timeline nao e criada.
 
+Na Fase 5, Diagnostic, Quote e QuoteItem seguem a mesma regra de tenant:
+consultas usam `organizationId` e ids de recurso. O browser nao envia
+`organizationId`, role, status atual, subtotal, total ou descricoes de timeline.
+Envio/aprovacao/rejeicao de Quote validam status esperado de Quote e
+ServiceOrder na mesma transacao.
+
 Criacao de OS + timeline inicial e mudanca de status + timeline de status usam
 transacoes Prisma especificas no repository. Nao ha UnitOfWork, Transaction
 Manager ou repository generico.
@@ -333,6 +405,11 @@ foi implementado nesta fase para manter o escopo controlado.
 - `ServiceOrder.customerId` e derivado do Equipment validado no tenant durante a
   criacao.
 - `ServiceOrder` muda de status somente por workflow server-side.
+- `Diagnostic` e unico por ServiceOrder dentro da Organization.
+- `Quote` e unico por ServiceOrder dentro da Organization nesta fase.
+- QuoteItems sao mutaveis somente enquanto Quote esta em `DRAFT`.
+- Envio, aprovacao e rejeicao de Quote coordenam Quote, ServiceOrder e timeline
+  atomicamente.
 - Valores monetarios usam `Decimal @db.Decimal(12, 2)`.
 - Docker Compose fornece PostgreSQL local; a app roda via npm nesta fase.
 

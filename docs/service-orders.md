@@ -6,8 +6,8 @@ ServiceOrder representa a ordem de servico operacional do FixFlow. Nesta fase,
 ela cobre abertura, listagem, busca, filtro por status, detalhes, timeline
 inicial e transicoes de status controladas pelo workflow.
 
-Diagnostic, Quote, portal publico, PDF e integracoes continuam fora do escopo
-implementado.
+Diagnostic e Quote foram implementados na Fase 5. Portal publico, PDF e
+integracoes continuam fora do escopo implementado.
 
 ## Relacao com Customer e Equipment
 
@@ -92,9 +92,10 @@ FINAL_TESTING -> READY_FOR_PICKUP -> COMPLETED
 
 `CANCELLED` e terminal. `COMPLETED` tambem e terminal.
 
-Nesta fase o workflow valida a estrutura das transicoes. Ele ainda nao exige
-Diagnostic ou Quote existentes, porque essas funcionalidades serao implementadas
-em fases futuras.
+O workflow de dominio valida a estrutura das transicoes. A application layer
+agora bloqueia os caminhos comerciais especializados:
+`IN_DIAGNOSIS -> WAITING_FOR_APPROVAL` ocorre pelo envio do Quote, e
+`WAITING_FOR_APPROVAL -> APPROVED` ocorre pela aprovacao do Quote.
 
 ## Cancelamento e autorizacao
 
@@ -199,9 +200,7 @@ inteiros.
 
 ## Limitacoes atuais
 
-- nao ha Diagnostic funcional;
-- nao ha Quote ou QuoteItem funcional;
-- nao ha pre-condicoes de orcamento no workflow;
+- Diagnostic e Quote sao internos e autenticados nesta fase;
 - nao ha portal publico por `publicCode`;
 - nao ha PDF, email, WhatsApp, anexos ou IA;
 - rollback real em PostgreSQL nao foi validado neste ambiente sem Docker.

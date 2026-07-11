@@ -9,6 +9,8 @@ import {
   formatDate,
   formatDateTime,
   formatEquipmentType,
+  formatMoneyBRL,
+  formatQuoteStatus,
   formatServiceOrderStatus
 } from "@/app/app/format";
 import { transitionServiceOrderStatusAction } from "@/app/app/service-orders/actions";
@@ -168,6 +170,94 @@ export default async function ServiceOrderDetailsPage({
         action={transitionAction}
         actions={statusActions}
       />
+
+      <section className="mt-10 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-950">Diagnostico</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Registro tecnico operacional da ordem.
+              </p>
+            </div>
+            {serviceOrder.status === "IN_DIAGNOSIS" ? (
+              <Link
+                href={`/app/service-orders/${serviceOrder.id}/diagnostic`}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              >
+                {serviceOrder.diagnostic
+                  ? "Editar diagnostico"
+                  : "Registrar diagnostico"}
+              </Link>
+            ) : null}
+          </div>
+
+          {serviceOrder.diagnostic ? (
+            <div className="mt-5">
+              <p className="line-clamp-4 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+                {serviceOrder.diagnostic.description}
+              </p>
+              <Link
+                href={`/app/service-orders/${serviceOrder.id}/diagnostic`}
+                className="mt-4 inline-flex font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              >
+                Ver diagnostico
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-slate-600">
+              Diagnostico ainda nao registrado.
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-950">Orcamento</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Rascunho, envio logico e decisao interna.
+              </p>
+            </div>
+            {serviceOrder.quote ||
+            (serviceOrder.diagnostic && serviceOrder.status === "IN_DIAGNOSIS") ? (
+              <Link
+                href={`/app/service-orders/${serviceOrder.id}/quote`}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              >
+                {serviceOrder.quote ? "Ver orcamento" : "Criar orcamento"}
+              </Link>
+            ) : null}
+          </div>
+
+          {serviceOrder.quote ? (
+            <dl className="mt-5 grid gap-4 sm:grid-cols-3">
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Status</dt>
+                <dd className="mt-1 text-base font-semibold text-slate-950">
+                  {formatQuoteStatus(serviceOrder.quote.status)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Itens</dt>
+                <dd className="mt-1 text-base font-semibold text-slate-950">
+                  {serviceOrder.quote.itemCount}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Total</dt>
+                <dd className="mt-1 text-base font-semibold text-slate-950">
+                  {formatMoneyBRL(serviceOrder.quote.total)}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="mt-5 text-sm text-slate-600">
+              Orcamento ainda nao criado.
+            </p>
+          )}
+        </div>
+      </section>
 
       <section className="mt-10">
         <h3 className="text-xl font-bold text-slate-950">Historico</h3>

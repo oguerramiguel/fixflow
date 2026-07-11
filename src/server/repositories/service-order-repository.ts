@@ -1,4 +1,5 @@
 import { Prisma, ServiceOrderStatus } from "@prisma/client";
+import type { QuoteStatus as DomainQuoteStatus } from "@/domain/entities/quote";
 import { LIST_PAGE_SIZE } from "@/domain/services/pagination";
 import type { ServiceOrderStatus as DomainServiceOrderStatus } from "@/domain/entities/service-order";
 import type { ServiceOrderTimelineType } from "@/domain/services/service-order-timeline";
@@ -59,6 +60,28 @@ function buildServiceOrderDetailsSelect(
 ): Prisma.ServiceOrderSelect {
   return {
     ...serviceOrderRecordSelect,
+    diagnostic: {
+      select: {
+        id: true,
+        description: true,
+        updatedAt: true
+      }
+    },
+    quote: {
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true
+          }
+        }
+      }
+    },
     timeline: {
       where: {
         organizationId: context.organizationId
@@ -90,6 +113,22 @@ export type ServiceOrderRecord = Prisma.ServiceOrderGetPayload<{
 }>;
 
 export type ServiceOrderDetailsRecord = ServiceOrderRecord & {
+  diagnostic: {
+    id: string;
+    description: string;
+    updatedAt: Date;
+  } | null;
+  quote: {
+    id: string;
+    status: DomainQuoteStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    items: {
+      id: string;
+      quantity: number;
+      unitPrice: Prisma.Decimal;
+    }[];
+  } | null;
   timeline: {
     id: string;
     type: string;

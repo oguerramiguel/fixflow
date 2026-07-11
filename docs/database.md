@@ -25,8 +25,8 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 - User possui varias AuthSession.
 - Customer possui Equipment e ServiceOrder.
 - Equipment pertence a Customer e pode aparecer em varias ServiceOrder.
-- ServiceOrder possui no maximo um Diagnostic, varios Quote e varios eventos de
-  timeline.
+- ServiceOrder possui no maximo um Diagnostic, no maximo um Quote e varios
+  eventos de timeline.
 - Quote possui varios QuoteItem.
 
 ## Decisoes de modelagem
@@ -51,8 +51,8 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 - A expiracao inicial da sessao e fixa em 7 dias a partir da criacao. Nao ha
   sliding expiration nesta fase.
 - `Diagnostic` e unico por `ServiceOrder` dentro da Organization.
-- `Quote` permite multiplos registros por ServiceOrder para preservar evolucao
-  futura de revisoes de orcamento.
+- `Quote` e unico por `ServiceOrder` dentro da Organization nesta fase.
+  Revisoes ou multiplos orcamentos ativos ficam fora do MVP atual.
 
 ## Valores monetarios
 
@@ -83,6 +83,8 @@ por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
 - `User.email` e unico globalmente.
 - `AuthSession.tokenHash` e unico globalmente.
 - `ServiceOrder.publicCode` e unico globalmente.
+- `Diagnostic` e unico por `[serviceOrderId, organizationId]`.
+- `Quote` e unico por `[serviceOrderId, organizationId]`.
 - `Equipment` tem unicidade em `[organizationId, serialNumber]`; PostgreSQL
   permite multiplos `NULL`, entao equipamentos sem serial nao entram em conflito.
 
@@ -180,6 +182,52 @@ a aplicacao retorna conflito e nao cria timeline.
 
 Nenhuma alteração de schema ou migration foi necessária na Fase 4.
 
+## Diagnostic, Quote e QuoteItem na Fase 5
+
+Diagnostic, Quote e QuoteItem passaram a ser usados pela aplicacao.
+
+Diagnostic pertence a Organization e ServiceOrder por relacao composta
+`[serviceOrderId, organizationId] -> ServiceOrder[id, organizationId]`. O banco
+mantem unicidade em `[serviceOrderId, organizationId]`, garantindo no maximo um
+Diagnostic por OS dentro do tenant.
+
+Quote tambem pertence a Organization e ServiceOrder pela mesma estrategia de
+relacao composta. A Fase 5 adicionou unicidade em
+`[serviceOrderId, organizationId]`, garantindo no maximo um Quote por OS dentro
+do tenant. A migration
+`20260711000000_make_quote_unique_per_service_order` criou o indice unique
+`Quote_serviceOrderId_organizationId_key`.
+
+QuoteItem pertence a Organization e Quote. Consultas e mutacoes usam
+`organizationId` diretamente, e quando o contexto do Quote esta disponivel
+tambem filtram por `quoteId`. Itens sao removidos com `deleteMany` filtrando
+`id + quoteId + organizationId`, nunca por id isolado.
+
+`QuoteStatus` continua como enum Prisma: `DRAFT`, `SENT`, `APPROVED` e
+`REJECTED`.
+
+`QuoteItem.unitPrice` permanece `Decimal @db.Decimal(12, 2)`, armazenado no
+PostgreSQL como `DECIMAL(12,2)`. A precisao total e 12 digitos, com escala 2,
+permitindo valores positivos ate `9999999999.99`. Subtotal e total sao
+derivados no servidor usando `Prisma.Decimal` e retornados em DTOs como strings
+canonicas com duas casas.
+
+Nenhum campo `subtotal` ou `total` foi adicionado ao banco nesta fase.
+
+ServiceOrderTimeline passou a registrar tambem:
+
+- `DIAGNOSTIC_RECORDED`;
+- `DIAGNOSTIC_UPDATED`;
+- `QUOTE_CREATED`;
+- `QUOTE_SENT`;
+- `QUOTE_APPROVED`;
+- `QUOTE_REJECTED`.
+
+Criacao/edicao de Diagnostic, criacao de Quote e transicoes comerciais de Quote
+usam transacoes Prisma junto com timeline. Envio/aprovacao/rejeicao atualizam
+Quote e ServiceOrder de forma atomica e com concorrencia otimista por status
+esperado.
+
 ## Estrategia de publicCode
 
 `ServiceOrder.publicCode` sera usado futuramente para acompanhamento publico da
@@ -210,7 +258,7 @@ erDiagram
   Customer ||--o{ ServiceOrder : requests
   Equipment ||--o{ ServiceOrder : receives
   ServiceOrder ||--o| Diagnostic : has
-  ServiceOrder ||--o{ Quote : has
+  ServiceOrder ||--o| Quote : has
   Quote ||--o{ QuoteItem : contains
   ServiceOrder ||--o{ ServiceOrderTimeline : records
 ```

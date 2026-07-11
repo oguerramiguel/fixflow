@@ -140,6 +140,48 @@ Requisitos nao funcionais reforcados nesta fase:
 Diagnostic, Quote, portal publico, acompanhamento publico, PDF e integracoes
 externas continuam fora do escopo implementado.
 
+## Status da Fase 5
+
+A Fase 5 implementa diagnostico tecnico e orcamento interno integrados ao
+workflow de ServiceOrder.
+
+Requisitos funcionais atendidos nesta fase:
+
+- RF007: registro e edicao de Diagnostic tecnico enquanto a OS esta em
+  `IN_DIAGNOSIS`.
+- RF008: criacao explicita de Quote em `DRAFT` para ordens com Diagnostic.
+- RF009: criacao, edicao e remocao de QuoteItems em `DRAFT`, com quantidade,
+  preco unitario, subtotal e total calculados server-side.
+- RF010: registro interno de aprovacao ou rejeicao de orcamento por OWNER ou
+  ADMIN.
+- RF011: envio, aprovacao e rejeicao de Quote integrados ao workflow real da
+  ServiceOrder por transicoes especializadas.
+- RF012: timeline registra Diagnostic, Quote criado, Quote enviado, Quote
+  aprovado, Quote rejeitado e mudancas de status correspondentes.
+- RF014: tenant isolation aplicado nas operacoes de Diagnostic, Quote,
+  QuoteItem, ServiceOrder e timeline.
+
+Requisitos nao funcionais reforcados nesta fase:
+
+- RNF004: acesso a dados de Diagnostic e Quote organizado em repositories
+  concretos.
+- RNF005: consultas de Diagnostic, Quote e QuoteItem filtradas por
+  `organizationId`.
+- RNF006: valores monetarios usam `Prisma.Decimal`; DTOs monetarios usam strings
+  canonicas e a UI formata BRL a partir dessas strings.
+- RNF007: testes de Decimal, money parsing, Diagnostic, Quote lifecycle,
+  autorizacao, concorrencia, transacoes e tenant isolation.
+- RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
+  obrigatorios.
+
+Continuam fora do escopo implementado:
+
+- portal publico;
+- aprovacao publica;
+- envio automatico de e-mail ou WhatsApp;
+- PDF;
+- pagamentos.
+
 ## Fora do escopo inicial
 
 - cadastro publico de usuarios;

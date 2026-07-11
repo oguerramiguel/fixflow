@@ -132,7 +132,7 @@ model ServiceOrder {
   equipmentId    String
   equipment      Equipment              @relation(fields: [equipmentId, organizationId], references: [id, organizationId], onDelete: Restrict)
   diagnostic     Diagnostic?
-  quotes         Quote[]
+  quote          Quote?
   timeline       ServiceOrderTimeline[]
   publicCode     String                 @unique
   reportedIssue  String                 @db.Text
@@ -176,6 +176,7 @@ model Quote {
   updatedAt      DateTime     @updatedAt
 
   @@unique([id, organizationId])
+  @@unique([serviceOrderId, organizationId])
   @@index([organizationId])
   @@index([organizationId, serviceOrderId])
   @@index([organizationId, status])

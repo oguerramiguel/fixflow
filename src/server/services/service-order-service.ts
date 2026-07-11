@@ -3,11 +3,16 @@ import { ConflictError } from "@/domain/errors/conflict-error";
 import { DomainError } from "@/domain/errors/domain-error";
 import { NotFoundError } from "@/domain/errors/not-found-error";
 import { ValidationError } from "@/domain/errors/validation-error";
+import type { QuoteStatus } from "@/domain/entities/quote";
 import type { ServiceOrderStatus } from "@/domain/entities/service-order";
+import { calculateQuoteTotal, toCanonicalMoneyString } from "@/domain/services/money";
 import {
   assertServiceOrderStatusTransition,
-  getAllowedNextServiceOrderStatuses
+  getAllowedNextServiceOrderStatuses,
+  getSpecializedServiceOrderTransitionMessage,
+  isServiceOrderTransitionManagedBySpecializedFlow
 } from "@/domain/services/service-order-workflow";
+import { getQuoteStatusLabel } from "@/domain/services/quote-status-labels";
 import {
   calculateTotalPages,
   normalizeListInput,
@@ -80,12 +85,30 @@ export type ServiceOrderTimelineDto = {
   createdAt: Date;
 };
 
+export type ServiceOrderDiagnosticSummaryDto = {
+  id: string;
+  description: string;
+  updatedAt: Date;
+};
+
+export type ServiceOrderQuoteSummaryDto = {
+  id: string;
+  status: QuoteStatus;
+  statusLabel: string;
+  itemCount: number;
+  total: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type ServiceOrderDto = ServiceOrderSummaryDto & {
   updatedAt: Date;
   customer: ServiceOrderCustomerDto;
 };
 
 export type ServiceOrderDetailsDto = ServiceOrderDto & {
+  diagnostic: ServiceOrderDiagnosticSummaryDto | null;
+  quote: ServiceOrderQuoteSummaryDto | null;
   timeline: ServiceOrderTimelineDto[];
   allowedNextStatuses: ServiceOrderStatus[];
 };
@@ -212,15 +235,40 @@ function mapServiceOrder(record: ServiceOrderRecord): ServiceOrderDto {
 function mapServiceOrderDetails(
   record: ServiceOrderDetailsRecord
 ): ServiceOrderDetailsDto {
+  const allowedNextStatuses = getAllowedNextServiceOrderStatuses(
+    record.status
+  ).filter(
+    (nextStatus) =>
+      !isServiceOrderTransitionManagedBySpecializedFlow(record.status, nextStatus)
+  );
+
   return {
     ...mapServiceOrder(record),
+    diagnostic: record.diagnostic
+      ? {
+          id: record.diagnostic.id,
+          description: record.diagnostic.description,
+          updatedAt: record.diagnostic.updatedAt
+        }
+      : null,
+    quote: record.quote
+      ? {
+          id: record.quote.id,
+          status: record.quote.status,
+          statusLabel: getQuoteStatusLabel(record.quote.status),
+          itemCount: record.quote.items.length,
+          total: toCanonicalMoneyString(calculateQuoteTotal(record.quote.items)),
+          createdAt: record.quote.createdAt,
+          updatedAt: record.quote.updatedAt
+        }
+      : null,
     timeline: record.timeline.map((event) => ({
       id: event.id,
       type: event.type,
       description: event.description,
       createdAt: event.createdAt
     })),
-    allowedNextStatuses: getAllowedNextServiceOrderStatuses(record.status)
+    allowedNextStatuses
   };
 }
 
@@ -373,6 +421,15 @@ export async function transitionServiceOrderStatus(
   }
 
   assertServiceOrderStatusTransition(serviceOrder.status, targetStatus);
+
+  const specializedTransitionMessage = getSpecializedServiceOrderTransitionMessage(
+    serviceOrder.status,
+    targetStatus
+  );
+
+  if (specializedTransitionMessage) {
+    throw new DomainError(specializedTransitionMessage);
+  }
 
   if (targetStatus === "CANCELLED") {
     requireRole(context, [UserRole.OWNER, UserRole.ADMIN]);

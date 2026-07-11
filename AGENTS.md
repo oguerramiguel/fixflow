@@ -65,6 +65,19 @@ Organization.
 - Mudancas no workflow exigem testes e atualizacao de
   `docs/service-order-workflow.md`.
 
+## Diagnostic, Quote e dinheiro
+
+- Calculos monetarios de negocio nunca devem usar JavaScript number.
+- `unitPrice` deve ser validado a partir de string e convertido para Decimal
+  suportado pelo Prisma.
+- DTOs monetarios devem usar strings decimais canonicas com duas casas.
+- QuoteItems so podem ser alterados enquanto Quote esta em `DRAFT`.
+- `IN_DIAGNOSIS -> WAITING_FOR_APPROVAL` ocorre pelo envio do Quote.
+- `WAITING_FOR_APPROVAL -> APPROVED` ocorre pela aprovacao do Quote.
+- Mudancas de lifecycle do Quote e status da ServiceOrder devem ser atomicas.
+- Acesso a Diagnostic e Quote deve ser tenant-aware.
+- Mudancas em regras monetarias exigem testes.
+
 ## Autenticacao
 
 - `passwordHash` nunca deve ser retornado em DTOs, props ou respostas HTTP.

@@ -37,9 +37,9 @@ stateDiagram-v2
 | --- | --- | --- |
 | RECEIVED | IN_DIAGNOSIS | Equipamento recebido e encaminhado para diagnostico tecnico. |
 | RECEIVED | CANCELLED | Atendimento cancelado antes do inicio do diagnostico. |
-| IN_DIAGNOSIS | WAITING_FOR_APPROVAL | Diagnostico concluido conceitualmente e orcamento aguardando decisao futura do cliente. |
+| IN_DIAGNOSIS | WAITING_FOR_APPROVAL | Orcamento enviado logicamente pelo fluxo de Quote e aguardando decisao do cliente. |
 | IN_DIAGNOSIS | CANCELLED | Atendimento cancelado durante diagnostico, antes de aprovacao. |
-| WAITING_FOR_APPROVAL | APPROVED | Cliente aprovou conceitualmente o fluxo para reparo. |
+| WAITING_FOR_APPROVAL | APPROVED | Aprovacao interna do Quote registrada por usuario autorizado. |
 | WAITING_FOR_APPROVAL | CANCELLED | Cliente rejeitou ou cancelou antes do reparo. |
 | APPROVED | IN_REPAIR | Reparo iniciado apos aprovacao. |
 | APPROVED | CANCELLED | Cancelamento excepcional antes do inicio do reparo. |
@@ -63,24 +63,46 @@ financeiros ou administrativos tratados por regras futuras.
 OWNER e ADMIN podem cancelar quando o workflow permite. TECHNICIAN nao pode
 cancelar, mesmo que invoque a Server Action diretamente.
 
-## Pre-condicoes futuras
+## Pre-condicoes comerciais da Fase 5
 
-Diagnostic e Quote ainda nao sao funcionais nesta fase. Por isso o workflow nao
-exige:
+A regra estrutural de dominio continua reconhecendo
+`IN_DIAGNOSIS -> WAITING_FOR_APPROVAL` e
+`WAITING_FOR_APPROVAL -> APPROVED` como parte do workflow. Entretanto, a
+application layer bloqueia essas transicoes pelo service generico de
+ServiceOrder.
 
-- Diagnostic existente para avancar diagnostico;
-- Quote existente para aguardar aprovacao;
-- aprovacao real de Quote para ir a `APPROVED`;
-- checklist para `FINAL_TESTING`.
+`IN_DIAGNOSIS -> WAITING_FOR_APPROVAL` ocorre somente atraves do envio logico de
+Quote `DRAFT -> SENT`, com:
 
-Essas pre-condicoes devem ser adicionadas quando Diagnostic e Quote forem
-implementados.
+- Diagnostic existente;
+- pelo menos 1 item;
+- total recalculado maior que zero;
+- usuario `OWNER` ou `ADMIN`.
+
+`WAITING_FOR_APPROVAL -> APPROVED` ocorre somente atraves do registro interno de
+aprovacao de Quote `SENT -> APPROVED`, tambem restrito a `OWNER` ou `ADMIN`.
+
+Rejeicao de Quote e um fluxo comercial separado: Quote `SENT -> REJECTED` altera
+a ServiceOrder de `WAITING_FOR_APPROVAL` para `CANCELLED` na mesma transacao.
+Essa decisao encerra a OS no MVP da Fase 5.
+
+Ao tentar usar a transicao generica para os caminhos especializados, o service
+retorna erro controlado orientando o usuario a enviar ou aprovar o orcamento.
 
 ## Timeline
 
 A abertura cria um evento `SERVICE_ORDER_CREATED`. Toda transicao valida cria
 um evento `STATUS_CHANGED` com descricao gerada server-side a partir dos labels
 de status.
+
+Diagnostic e Quote adicionam eventos operacionais na mesma timeline consolidada:
+
+- `DIAGNOSTIC_RECORDED`;
+- `DIAGNOSTIC_UPDATED`;
+- `QUOTE_CREATED`;
+- `QUOTE_SENT`;
+- `QUOTE_APPROVED`;
+- `QUOTE_REJECTED`.
 
 O browser nao envia `type` nem `description` da timeline.
 
@@ -95,3 +117,7 @@ persistido, o repository atualiza usando filtro por:
 
 Se nenhuma linha for alterada, a operacao retorna `ConflictError` e nenhuma
 timeline de status e criada.
+
+Fluxos comerciais de Quote aplicam a mesma estrategia para Quote e ServiceOrder
+na mesma transacao. Se o status esperado de qualquer um mudar antes do update,
+a operacao retorna `ConflictError` e nenhuma timeline comercial e criada.

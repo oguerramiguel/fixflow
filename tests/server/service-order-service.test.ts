@@ -1,5 +1,6 @@
 import {
   EquipmentType,
+  Prisma,
   ServiceOrderStatus as PrismaServiceOrderStatus,
   UserRole
 } from "@prisma/client";
@@ -72,6 +73,8 @@ const serviceOrderRecord = {
 
 const serviceOrderDetailsRecord = {
   ...serviceOrderRecord,
+  diagnostic: null,
+  quote: null,
   timeline: [
     {
       id: "timeline-1",
@@ -324,6 +327,42 @@ describe("service order service", () => {
     );
   });
 
+  it("blocks generic transition from diagnosis to waiting for approval", async () => {
+    await expect(
+      transitionServiceOrderStatus(
+        context,
+        "service-order-1",
+        "WAITING_FOR_APPROVAL",
+        createDependencies({
+          findServiceOrderById: vi.fn(async () => ({
+            ...serviceOrderDetailsRecord,
+            status: PrismaServiceOrderStatus.IN_DIAGNOSIS
+          }))
+        })
+      )
+    ).rejects.toThrow(
+      "Envie o orcamento para colocar a ordem em espera de aprovacao."
+    );
+  });
+
+  it("blocks generic transition from waiting for approval to approved", async () => {
+    await expect(
+      transitionServiceOrderStatus(
+        context,
+        "service-order-1",
+        "APPROVED",
+        createDependencies({
+          findServiceOrderById: vi.fn(async () => ({
+            ...serviceOrderDetailsRecord,
+            status: PrismaServiceOrderStatus.WAITING_FOR_APPROVAL
+          }))
+        })
+      )
+    ).rejects.toThrow(
+      "Registre a aprovacao do orcamento para aprovar a ordem de servico."
+    );
+  });
+
   it("rejects invalid targetStatus before loading the service order", async () => {
     const dependencies = createDependencies();
 
@@ -450,6 +489,49 @@ describe("service order service", () => {
     ).resolves.toMatchObject({
       status: "IN_DIAGNOSIS"
     });
+  });
+
+  it("maps diagnostic and quote summaries without exposing organizationId", async () => {
+    const dependencies = createDependencies({
+      findServiceOrderById: vi.fn(async () => ({
+        ...serviceOrderDetailsRecord,
+        status: PrismaServiceOrderStatus.IN_DIAGNOSIS,
+        diagnostic: {
+          id: "diagnostic-1",
+          description: "Fonte em curto na placa principal.",
+          updatedAt: now
+        },
+        quote: {
+          id: "quote-1",
+          status: "DRAFT" as const,
+          createdAt: now,
+          updatedAt: now,
+          items: [
+            {
+              id: "item-1",
+              quantity: 2,
+              unitPrice: new Prisma.Decimal("10.50")
+            }
+          ]
+        }
+      }))
+    });
+
+    const result = await getServiceOrderDetails(
+      context,
+      "service-order-1",
+      dependencies
+    );
+
+    expect(result.diagnostic?.description).toBe(
+      "Fonte em curto na placa principal."
+    );
+    expect(result.quote).toMatchObject({
+      status: "DRAFT",
+      itemCount: 1,
+      total: "21.00"
+    });
+    expect(result).not.toHaveProperty("organizationId");
   });
 
   it("does not expose forbidden fields in create input", () => {

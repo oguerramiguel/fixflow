@@ -14,7 +14,15 @@ const mocks = vi.hoisted(() => ({
   createEquipment: vi.fn(),
   updateEquipment: vi.fn(),
   createServiceOrder: vi.fn(),
-  transitionServiceOrderStatus: vi.fn()
+  transitionServiceOrderStatus: vi.fn(),
+  saveDiagnosticForServiceOrder: vi.fn(),
+  createQuoteForServiceOrder: vi.fn(),
+  addQuoteItem: vi.fn(),
+  updateQuoteItem: vi.fn(),
+  removeQuoteItem: vi.fn(),
+  sendQuote: vi.fn(),
+  approveQuote: vi.fn(),
+  rejectQuote: vi.fn()
 }));
 
 vi.mock("next/navigation", () => ({
@@ -44,6 +52,20 @@ vi.mock("@/server/services/service-order-service", () => ({
   transitionServiceOrderStatus: mocks.transitionServiceOrderStatus
 }));
 
+vi.mock("@/server/services/diagnostic-service", () => ({
+  saveDiagnosticForServiceOrder: mocks.saveDiagnosticForServiceOrder
+}));
+
+vi.mock("@/server/services/quote-service", () => ({
+  createQuoteForServiceOrder: mocks.createQuoteForServiceOrder,
+  addQuoteItem: mocks.addQuoteItem,
+  updateQuoteItem: mocks.updateQuoteItem,
+  removeQuoteItem: mocks.removeQuoteItem,
+  sendQuote: mocks.sendQuote,
+  approveQuote: mocks.approveQuote,
+  rejectQuote: mocks.rejectQuote
+}));
+
 import { createCustomerAction } from "@/app/app/customers/actions";
 import {
   createEquipmentAction,
@@ -53,6 +75,16 @@ import {
   createServiceOrderAction,
   transitionServiceOrderStatusAction
 } from "@/app/app/service-orders/actions";
+import { saveDiagnosticAction } from "@/app/app/service-orders/[serviceOrderId]/diagnostic/actions";
+import {
+  addQuoteItemAction,
+  approveQuoteAction,
+  createQuoteAction,
+  rejectQuoteAction,
+  removeQuoteItemAction,
+  sendQuoteAction,
+  updateQuoteItemAction
+} from "@/app/app/service-orders/[serviceOrderId]/quote/actions";
 
 const context = {
   userId: "user-1",
@@ -323,5 +355,190 @@ describe("delivery actions", () => {
       error: "Permissao insuficiente."
     });
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("saves diagnostic using authenticated context and route serviceOrderId", async () => {
+    mocks.saveDiagnosticForServiceOrder.mockResolvedValueOnce({
+      id: "diagnostic-1"
+    });
+
+    await expect(
+      saveDiagnosticAction(
+        "service-order-from-route",
+        {},
+        createFormData({
+          serviceOrderId: "service-order-from-browser",
+          organizationId: "org-from-browser",
+          status: "COMPLETED",
+          type: "STATUS_CHANGED",
+          description: "Diagnostico tecnico consistente.",
+          technicalNotes: "Notas internas."
+        })
+      )
+    ).rejects.toThrow(
+      "redirect:/app/service-orders/service-order-from-route/diagnostic"
+    );
+
+    expect(mocks.saveDiagnosticForServiceOrder).toHaveBeenCalledWith(
+      context,
+      "service-order-from-route",
+      {
+        description: "Diagnostico tecnico consistente.",
+        technicalNotes: "Notas internas."
+      }
+    );
+  });
+
+  it("creates quote without accepting commercial state from FormData", async () => {
+    mocks.createQuoteForServiceOrder.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+
+    await expect(
+      createQuoteAction(
+        "service-order-1",
+        {},
+        createFormData({
+          organizationId: "org-from-browser",
+          role: "OWNER",
+          status: "APPROVED",
+          currentServiceOrderStatus: "IN_DIAGNOSIS"
+        })
+      )
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+
+    expect(mocks.createQuoteForServiceOrder).toHaveBeenCalledWith(
+      context,
+      "service-order-1"
+    );
+  });
+
+  it("adds quote item keeping unitPrice as string and ignoring totals", async () => {
+    mocks.addQuoteItem.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+
+    await expect(
+      addQuoteItemAction(
+        "service-order-1",
+        {},
+        createFormData({
+          description: "Limpeza interna",
+          quantity: "2",
+          unitPrice: "100,50",
+          subtotal: "200.00",
+          total: "200.00",
+          organizationId: "org-from-browser"
+        })
+      )
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+
+    expect(mocks.addQuoteItem).toHaveBeenCalledWith(context, "service-order-1", {
+      description: "Limpeza interna",
+      quantity: "2",
+      unitPrice: "100,50"
+    });
+  });
+
+  it("updates and removes quote items without accepting quoteId from FormData", async () => {
+    mocks.updateQuoteItem.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+    mocks.removeQuoteItem.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+
+    await expect(
+      updateQuoteItemAction(
+        "service-order-1",
+        "item-from-route",
+        {},
+        createFormData({
+          quoteId: "quote-from-browser",
+          organizationId: "org-from-browser",
+          description: "Limpeza completa",
+          quantity: "1",
+          unitPrice: "120.00"
+        })
+      )
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+
+    await expect(
+      removeQuoteItemAction(
+        "service-order-1",
+        "item-from-route",
+        {},
+        createFormData({
+          quoteItemId: "item-from-browser",
+          quoteId: "quote-from-browser",
+          organizationId: "org-from-browser"
+        })
+      )
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+
+    expect(mocks.updateQuoteItem).toHaveBeenCalledWith(
+      context,
+      "service-order-1",
+      "item-from-route",
+      {
+        description: "Limpeza completa",
+        quantity: "1",
+        unitPrice: "120.00"
+      }
+    );
+    expect(mocks.removeQuoteItem).toHaveBeenCalledWith(
+      context,
+      "service-order-1",
+      "item-from-route"
+    );
+  });
+
+  it("runs quote lifecycle actions without trusting status or role FormData", async () => {
+    mocks.sendQuote.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+    mocks.approveQuote.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+    mocks.rejectQuote.mockResolvedValueOnce({
+      id: "quote-1"
+    });
+
+    for (const action of [sendQuoteAction, approveQuoteAction, rejectQuoteAction]) {
+      await expect(
+        action(
+          "service-order-1",
+          {},
+          createFormData({
+            organizationId: "org-from-browser",
+            role: "OWNER",
+            currentQuoteStatus: "SENT",
+            currentServiceOrderStatus: "WAITING_FOR_APPROVAL",
+            total: "999.99",
+            description: "browser timeline"
+          })
+        )
+      ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+    }
+
+    expect(mocks.sendQuote).toHaveBeenCalledWith(context, "service-order-1");
+    expect(mocks.approveQuote).toHaveBeenCalledWith(context, "service-order-1");
+    expect(mocks.rejectQuote).toHaveBeenCalledWith(context, "service-order-1");
+  });
+
+  it("returns safe conflict and authorization feedback from quote actions", async () => {
+    mocks.sendQuote.mockRejectedValueOnce(new ConflictError("quote conflict"));
+    mocks.approveQuote.mockRejectedValueOnce(new AuthorizationError());
+
+    await expect(
+      sendQuoteAction("service-order-1", {}, createFormData({}))
+    ).resolves.toEqual({
+      error: "quote conflict"
+    });
+    await expect(
+      approveQuoteAction("service-order-1", {}, createFormData({}))
+    ).resolves.toEqual({
+      error: "Permissao insuficiente."
+    });
   });
 });

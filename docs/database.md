@@ -230,16 +230,20 @@ esperado.
 
 ## Estrategia de publicCode
 
-`ServiceOrder.publicCode` sera usado futuramente para acompanhamento publico da
-OS e ja e gerado na abertura de ordens. Ele nao deve ser ID incremental nem
-derivado do ID interno. A estrategia atual gera um codigo com prefixo `FF-` e
-10 caracteres aleatorios usando alfabeto sem caracteres ambiguos.
+`ServiceOrder.publicCode` e usado para acompanhamento publico da OS e ja e
+gerado na abertura de ordens. Ele nao deve ser ID incremental nem derivado do ID
+interno. A estrategia atual gera um codigo com prefixo `FF-` e 10 caracteres
+aleatorios usando alfabeto sem caracteres ambiguos.
 
 Exemplo conceitual: `FF-7KQ4M2X9AB`.
 
 O campo e unico globalmente. Em caso raro de colisao especifica em
 `publicCode`, o service gera novo codigo e tenta novamente ate 5 vezes. P2002
 nao relacionado a `publicCode` nao e tratado como colisao.
+
+Na Fase 6, `/track/[publicCode]` consulta ServiceOrder por esse campo usando
+DTO publico minimo. Nenhuma alteracao de schema foi necessaria para o portal
+publico.
 
 ## Diagrama ER simplificado
 

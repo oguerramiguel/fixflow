@@ -35,6 +35,11 @@ dados sem criar abstracoes prematuras.
 `GET /api/health` nao consulta o banco. `GET /api/me` e uma rota autenticada e
 resolve o usuario atual no servidor.
 
+O portal publico fica em `/track/[publicCode]`. Ele nao usa o layout protegido
+de `/app`, nao chama `requireAuthenticatedContext()` e nao mostra navegacao
+administrativa. O acesso publico e limitado a uma unica ServiceOrder carregada
+por `publicCode` validado.
+
 ## Autenticacao e sessao
 
 A Fase 2 implementa autenticacao propria e limitada ao escopo atual:
@@ -225,6 +230,53 @@ transacao. Envio altera Quote `DRAFT -> SENT` e ServiceOrder
 altera Quote `SENT -> REJECTED` e ServiceOrder
 `WAITING_FOR_APPROVAL -> CANCELLED`.
 
+Fluxo publico de acompanhamento implementado na Fase 6:
+
+```mermaid
+sequenceDiagram
+  participant Visitor
+  participant Page as /track/[publicCode]
+  participant Service as Public tracking service
+  participant Repo as Public repository
+  participant Prisma
+  participant DB as PostgreSQL
+
+  Visitor->>Page: acessa link publico
+  Page->>Service: publicCode da rota
+  Service->>Service: trim, uppercase e formato exato
+  Service->>Repo: buscar ServiceOrder por publicCode
+  Repo->>Prisma: select minimo sem Customer e sem IDs internos
+  Prisma->>DB: consulta por publicCode unique
+  DB-->>Repo: dados selecionados
+  Repo-->>Service: record publico
+  Service-->>Page: DTO publico minimo
+```
+
+Fluxo publico de decisao de Quote:
+
+```mermaid
+sequenceDiagram
+  participant Visitor
+  participant Form as Public Quote Decision Form
+  participant Action as Server Action
+  participant Service as Public tracking service
+  participant Repo as Public repository
+  participant Tx as Prisma transaction
+  participant DB as PostgreSQL
+
+  Visitor->>Form: aprovar ou rejeitar
+  Form->>Action: submit sem ids internos
+  Action->>Service: publicCode da rota
+  Service->>Repo: carregar recurso por publicCode
+  Service->>Service: exigir Quote SENT
+  Service->>Service: exigir OS WAITING_FOR_APPROVAL
+  Service->>Repo: transicao publica
+  Repo->>Tx: update otimista de Quote
+  Repo->>Tx: update otimista de ServiceOrder
+  Repo->>Tx: cria timelines
+  Tx->>DB: commit atomico ou rollback
+```
+
 ## Acesso a dados
 
 O Prisma Client fica centralizado em `src/server/db/prisma.ts`. O arquivo evita
@@ -254,6 +306,8 @@ concretos e foram ampliados na Fase 4:
   timeline atomica.
 - `quote-repository`: leitura de Quote, criacao de DRAFT, mutacoes de itens e
   transicoes comerciais atomicas com ServiceOrder.
+- `public-service-order-repository`: consulta publica por `publicCode` com
+  select minimo e decisao publica de Quote com updates otimistas em transacao.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
@@ -266,6 +320,11 @@ fica em `src/server` ou em Server Actions/Route Handlers do App Router. Client
 Components nao importam Prisma nem repositories diretamente. A excecao visual e
 o formulario de login, que importa uma Server Action; o Next.js trata essa
 importacao como chamada server-side, nao como acesso direto ao banco no client.
+
+O portal publico tambem respeita essa fronteira: a pagina server-side recebe o
+DTO publico, e o unico Client Component e o formulario de decisao. As Server
+Actions publicas nao aceitam `organizationId`, `serviceOrderId`, `quoteId`,
+status atual ou total vindos do browser.
 
 ## Regras de dominio
 
@@ -293,6 +352,9 @@ Valores monetarios entram por `FormData` como string, passam por parser e
 validador, viram string canonica e entao `Prisma.Decimal`. Subtotal e total sao
 derivados com operacoes Decimal. DTOs retornam strings canonicas, e a UI formata
 BRL apenas para apresentacao.
+
+O DTO publico de Quote segue a mesma regra: `unitPrice`, `subtotal` e `total`
+sao strings canonicas calculadas server-side. A UI publica apenas formata BRL.
 
 ## Tratamento de erros
 
@@ -383,6 +445,14 @@ consultas usam `organizationId` e ids de recurso. O browser nao envia
 Envio/aprovacao/rejeicao de Quote validam status esperado de Quote e
 ServiceOrder na mesma transacao.
 
+Na Fase 6, `publicCode` e uma capability URL limitada a uma ServiceOrder. Ele
+permite consulta publica minima e decisao de Quote `SENT`, mas nao revela
+`organizationId`, nao lista recursos e nao autoriza operacoes internas. A
+consulta publica nao seleciona Customer, email, telefone, documento,
+`technicalNotes` ou IDs internos no DTO. A decisao publica carrega os IDs
+necessarios apenas server-side e atualiza Quote e ServiceOrder por
+`organizationId` persistido e status esperado dentro da transacao.
+
 Criacao de OS + timeline inicial e mudanca de status + timeline de status usam
 transacoes Prisma especificas no repository. Nao ha UnitOfWork, Transaction
 Manager ou repository generico.
@@ -402,6 +472,8 @@ foi implementado nesta fase para manter o escopo controlado.
 - A expiracao da sessao e fixa em 7 dias, sem sliding expiration nesta fase.
 - `User.email` permanece unico globalmente nesta fase.
 - `ServiceOrder.publicCode` e unico e nao deve ser sequencial.
+- `publicCode` funciona como link publico de acompanhamento, nao como
+  autenticacao administrativa.
 - `ServiceOrder.customerId` e derivado do Equipment validado no tenant durante a
   criacao.
 - `ServiceOrder` muda de status somente por workflow server-side.
@@ -421,5 +493,5 @@ foi implementado nesta fase para manter o escopo controlado.
 - auditoria de eventos;
 - controle de permissoes por papel;
 - Row Level Security;
-- portal publico da ordem de servico;
+- melhorias do portal publico e envio externo do link;
 - testes de integracao com banco.

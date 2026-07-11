@@ -7,8 +7,8 @@ orcamento de uma ServiceOrder. O escopo cobre Diagnostic, Quote, QuoteItem,
 calculo monetario com Decimal, envio logico, aprovacao interna e rejeicao
 interna.
 
-Nao ha portal publico, PDF, email, WhatsApp, pagamento ou aprovacao publica
-nesta fase.
+A Fase 6 adiciona consulta publica de Quote e aprovacao/rejeicao publica por
+`publicCode`. PDF, email, WhatsApp e pagamento continuam fora do escopo.
 
 ## Diagnostic
 
@@ -116,6 +116,29 @@ de MVP, rejeitar o Quote encerra a OS: Quote `SENT -> REJECTED`, ServiceOrder
 Cancelamento generico de OS continua existindo para motivos operacionais e nao
 altera automaticamente Quote `SENT`.
 
+## Aprovacao e rejeicao publica
+
+O portal publico em `/track/[publicCode]` permite que o visitante aprove ou
+rejeite um Quote somente quando:
+
+- Quote esta em `SENT`;
+- ServiceOrder esta em `WAITING_FOR_APPROVAL`;
+- `publicCode` e valido e corresponde a uma ServiceOrder existente.
+
+O fluxo publico nao usa `AuthenticatedContext`, nao aceita role, nao aceita
+`organizationId`, nao aceita `quoteId`, nao aceita `serviceOrderId`, nao aceita
+status atual e nao aceita total vindos do browser.
+
+Aprovacao publica altera Quote `SENT -> APPROVED` e ServiceOrder
+`WAITING_FOR_APPROVAL -> APPROVED`. Rejeicao publica altera Quote
+`SENT -> REJECTED` e ServiceOrder `WAITING_FOR_APPROVAL -> CANCELLED`.
+
+O fluxo interno por OWNER/ADMIN continua existindo. Ambos os caminhos respeitam
+os mesmos invariantes de status, transacao, concorrencia e timeline.
+
+Quote `DRAFT` nunca aparece publicamente. Para o visitante, ele e tratado como
+orcamento ainda nao disponivel.
+
 ## Concorrencia e tenant isolation
 
 Transicoes de Quote usam concorrencia otimista com status esperado. As
@@ -127,3 +150,8 @@ Todas as operacoes recebem `AuthenticatedContext` ou `TenantContext` resolvido n
 servidor. Repositories filtram Diagnostic, Quote, QuoteItem, ServiceOrder e
 timeline por `organizationId`. `organizationId`, role, status atual, subtotal,
 total e descricao de timeline nao vem do browser.
+
+No fluxo publico, o service carrega ServiceOrder por `publicCode`, recupera os
+IDs internos apenas server-side e executa updates otimistas em transacao. Se
+Quote ou ServiceOrder ja tiverem mudado, a operacao retorna conflito e nenhuma
+timeline parcial e criada.

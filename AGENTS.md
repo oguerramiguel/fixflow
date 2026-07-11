@@ -78,6 +78,15 @@ Organization.
 - Acesso a Diagnostic e Quote deve ser tenant-aware.
 - Mudancas em regras monetarias exigem testes.
 
+## Portal publico
+
+- O portal publico por `publicCode` nunca deve usar `AuthenticatedContext`.
+- DTO publico deve ser minimo e separado dos DTOs internos.
+- Dados de Customer, IDs internos e `organizationId` nao devem ser expostos.
+- `publicCode` nao autoriza operacoes internas nem listagem de recursos.
+- Decisoes publicas de Quote devem ser transacionais e usar concorrencia
+  otimista.
+
 ## Autenticacao
 
 - `passwordHash` nunca deve ser retornado em DTOs, props ou respostas HTTP.

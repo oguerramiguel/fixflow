@@ -51,3 +51,11 @@ export function createQuoteApprovedTimelineDescription(): string {
 export function createQuoteRejectedTimelineDescription(): string {
   return "Rejeicao interna do orcamento registrada.";
 }
+
+export function createPublicQuoteApprovedTimelineDescription(): string {
+  return "Orcamento aprovado pelo portal publico.";
+}
+
+export function createPublicQuoteRejectedTimelineDescription(): string {
+  return "Orcamento rejeitado pelo portal publico.";
+}

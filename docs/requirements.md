@@ -21,7 +21,7 @@ comunicacao com clientes e entrega dos equipamentos.
 
 - organizar dados de clientes, equipamentos e ordens de servico;
 - dar rastreabilidade ao ciclo da manutencao;
-- preparar acompanhamento publico da OS;
+- oferecer acompanhamento publico da OS por codigo nao previsivel;
 - manter isolamento por Organization para evolucao SaaS;
 - sustentar evolucao com testes, documentacao e arquitetura clara.
 
@@ -51,13 +51,15 @@ comunicacao com clientes e entrega dos equipamentos.
 - RF010: O sistema deve registrar aprovacao ou rejeicao de orcamento.
 - RF011: O sistema deve controlar o status da ordem de servico por transicoes validas.
 - RF012: O sistema deve registrar eventos na timeline da ordem de servico.
-- RF013: O sistema deve permitir acompanhamento publico futuro por `publicCode`.
+- RF013: O sistema deve permitir acompanhamento publico por `publicCode`.
 - RF014: O sistema deve manter dados de uma Organization isolados de outra.
 - RF015: O sistema deve manter sessoes server-side persistidas no PostgreSQL.
 - RF016: O sistema deve permitir logout invalidando a sessao no servidor.
 - RF017: O sistema deve expor o usuario atual autenticado em `GET /api/me`.
 - RF018: O sistema deve construir um contexto autenticado com userId, organizationId e role.
 - RF019: O sistema deve diferenciar falha de autenticacao de falha de autorizacao.
+- RF020: O sistema deve permitir aprovacao ou rejeicao publica de Quote `SENT`
+  por `publicCode`.
 
 ## Requisitos nao funcionais
 
@@ -182,6 +184,41 @@ Continuam fora do escopo implementado:
 - PDF;
 - pagamentos.
 
+## Status da Fase 6
+
+A Fase 6 implementa acompanhamento publico de ServiceOrder por `publicCode`.
+
+Requisitos funcionais atendidos nesta fase:
+
+- RF010: aprovacao e rejeicao de orcamento agora podem ocorrer tambem pelo
+  portal publico quando Quote esta em `SENT` e a OS esta em
+  `WAITING_FOR_APPROVAL`.
+- RF012: timeline registra decisao publica de Quote e mudanca de status de
+  forma atomica.
+- RF013: acompanhamento publico por `publicCode` implementado em
+  `/track/[publicCode]`.
+- RF014: o portal publico nao recebe `organizationId` e nao expoe tenant,
+  Customer ou IDs internos.
+- RF020: decisao publica de Quote implementada com DTO publico minimo,
+  transacao e concorrencia otimista.
+
+Requisitos nao funcionais reforcados nesta fase:
+
+- RNF004: acesso publico organizado em repository concreto separado.
+- RNF006: valores monetarios continuam como Decimal no servidor e strings
+  canonicas no DTO.
+- RNF007: testes cobrem validacao de `publicCode`, DTO publico, query publica,
+  timeline publica, quote publico, decisao publica, conflito e actions.
+- RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
+  obrigatorios.
+
+Continuam fora do escopo implementado:
+
+- login de cliente;
+- envio automatico de e-mail ou WhatsApp;
+- PDF;
+- pagamentos.
+
 ## Fora do escopo inicial
 
 - cadastro publico de usuarios;
@@ -190,7 +227,6 @@ Continuam fora do escopo implementado:
 - MFA;
 - CRUDs completos;
 - dashboard funcional;
-- portal publico;
 - envio de e-mails;
 - geracao de PDF;
 - pagamentos;

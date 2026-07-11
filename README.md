@@ -17,8 +17,7 @@ entrevistas.
 
 ## Status atual
 
-Fase 5: diagnostico tecnico e orcamento interno integrados ao workflow da ordem
-de servico.
+Fase 6: portal publico de acompanhamento da ordem de servico por `publicCode`.
 
 Implementado ate aqui:
 
@@ -65,6 +64,14 @@ Implementado ate aqui:
 - envio logico de Quote por OWNER ou ADMIN;
 - aprovacao interna de Quote por OWNER ou ADMIN;
 - rejeicao interna de Quote por OWNER ou ADMIN;
+- portal publico em `/track/[publicCode]`;
+- consulta publica por `publicCode` com DTO minimo;
+- exibicao publica de status, equipamento, problema relatado, quote publico e
+  timeline publica;
+- ocultacao publica de Quote em `DRAFT`;
+- aprovacao publica de Quote `SENT`;
+- rejeicao publica de Quote `SENT`;
+- atualizacao atomica de Quote, ServiceOrder e timeline no fluxo publico;
 - integracao atomica entre Quote e ServiceOrder;
 - concorrencia otimista para transicoes comerciais de Quote e ServiceOrder;
 - repositories e services tenant-aware para Customer e Equipment;
@@ -80,9 +87,6 @@ Implementado ate aqui:
 Ainda nao implementado:
 
 - dashboard funcional;
-- portal publico do cliente;
-- acompanhamento publico por `publicCode`;
-- aprovacao publica de orcamento;
 - envio de e-mails;
 - PDF, pagamentos ou integracoes externas.
 
@@ -244,8 +248,12 @@ Os testes atuais cobrem:
   concorrencia otimista;
 - services de Diagnostic e Quote com transacoes, autorizacao, tenant isolation,
   concorrencia otimista e calculo monetario Decimal;
+- service e repository publicos para acompanhamento por `publicCode`;
+- DTO publico minimo sem Customer, IDs internos ou `organizationId`;
+- aprovacao/rejeicao publica de Quote com transacao e concorrencia otimista;
 - Server Actions de ServiceOrder;
 - Server Actions de Diagnostic e Quote;
+- Server Actions publicas de decisao do Quote;
 - checkpoint de truncation do bcrypt.
 
 ## Estrutura de diretorios
@@ -276,6 +284,7 @@ docs/
 - `docs/service-orders.md`
 - `docs/service-order-workflow.md`
 - `docs/diagnostic-quotes.md`
+- `docs/public-portal.md`
 - `docs/architecture.md`
 - `docs/database.md`
 - `docs/requirements.md`
@@ -295,5 +304,6 @@ docs/
 - [x] Orcamentos internos
 - [x] Calculo monetario com Decimal
 - [x] Ciclo de vida do orcamento integrado a ServiceOrder
-- [ ] Acompanhamento publico da OS
+- [x] Acompanhamento publico da OS
+- [x] Aprovacao e rejeicao publica de orcamento
 - [ ] Evolucao para controles SaaS multiempresa

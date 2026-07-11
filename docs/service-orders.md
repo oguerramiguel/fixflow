@@ -4,10 +4,12 @@
 
 ServiceOrder representa a ordem de servico operacional do FixFlow. Nesta fase,
 ela cobre abertura, listagem, busca, filtro por status, detalhes, timeline
-inicial e transicoes de status controladas pelo workflow.
+inicial, transicoes de status controladas pelo workflow e acompanhamento publico
+por `publicCode`.
 
-Diagnostic e Quote foram implementados na Fase 5. Portal publico, PDF e
-integracoes continuam fora do escopo implementado.
+Diagnostic e Quote foram implementados na Fase 5. O portal publico foi
+implementado na Fase 6. PDF e integracoes externas continuam fora do escopo
+implementado.
 
 ## Relacao com Customer e Equipment
 
@@ -78,6 +80,25 @@ novamente. O limite e `SERVICE_ORDER_PUBLIC_CODE_MAX_ATTEMPTS = 5`.
 
 P2002 nao relacionado a `publicCode` nao e tratado como colisao e e propagado
 como erro inesperado. A UI nao recebe detalhes Prisma.
+
+## Acompanhamento publico
+
+`publicCode` tambem e usado pela rota publica `/track/[publicCode]`. Essa rota
+nao exige login e nao usa o layout interno de `/app`.
+
+O acompanhamento publico:
+
+- carrega uma unica ServiceOrder por `publicCode` validado;
+- exibe status atual, problema relatado, tipo/marca/modelo do equipamento,
+  quote publico e timeline publica;
+- nao exibe Customer;
+- nao exibe email, telefone ou documento;
+- nao exibe `organizationId`;
+- nao exibe IDs internos;
+- nao permite transicoes genericas de ServiceOrder.
+
+`publicCode` funciona como capability URL limitada. Ele nao e autenticacao
+administrativa e nao permite listar ordens ou acessar dados internos.
 
 ## Workflow
 
@@ -198,9 +219,12 @@ Services retornam DTOs especificos para lista e detalhe. Eles nao expõem
 `organizationId`, `passwordHash`, `tokenHash`, token bruto ou objetos Prisma
 inteiros.
 
+O DTO publico e separado dos DTOs internos e ainda mais restrito: nao contem
+Customer, `serviceOrderId`, `customerId`, `equipmentId`, `quoteId`,
+`quoteItemId`, `organizationId`, serial do equipamento ou dados de Diagnostic.
+
 ## Limitacoes atuais
 
-- Diagnostic e Quote sao internos e autenticados nesta fase;
-- nao ha portal publico por `publicCode`;
+- Diagnostic tecnico continua interno no portal publico;
 - nao ha PDF, email, WhatsApp, anexos ou IA;
 - rollback real em PostgreSQL nao foi validado neste ambiente sem Docker.

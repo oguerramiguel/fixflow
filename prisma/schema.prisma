@@ -213,3 +213,36 @@ model ServiceOrderTimeline {
   @@index([organizationId])
   @@index([organizationId, serviceOrderId, createdAt])
 }
+
+model RateLimitCounter {
+  id              String   @id @default(cuid())
+  operation       String
+  keyHash         String
+  windowStart     DateTime
+  windowExpiresAt DateTime
+  count           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([operation, keyHash, windowStart])
+  @@index([operation, keyHash])
+  @@index([windowExpiresAt])
+}
+
+model SecurityAuditLog {
+  id             String   @id @default(cuid())
+  eventType      String
+  outcome        String
+  organizationId String?
+  userId         String?
+  subjectHash    String?
+  originHash     String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([eventType, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([subjectHash])
+}

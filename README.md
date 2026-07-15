@@ -2,7 +2,7 @@
 
 ![Status: MVP local](https://img.shields.io/badge/status-MVP%20local-blue)
 ![TypeScript: strict](https://img.shields.io/badge/TypeScript-strict-3178c6)
-![Tests: 220](https://img.shields.io/badge/tests-220%20passing-brightgreen)
+![Tests: local suite](https://img.shields.io/badge/tests-local%20suite-brightgreen)
 
 Plataforma web multi-tenant para gestao de assistencias tecnicas de notebooks e
 computadores.
@@ -58,6 +58,9 @@ server-side e dados isolados por `Organization`.
 - Aprovacao e rejeicao interna de orcamento.
 - Portal publico por `publicCode` em `/track/[publicCode]`.
 - Aprovacao e rejeicao publica de Quote `SENT`.
+- Cabecalhos HTTP de seguranca centralizados.
+- Rate limiting para login, consulta publica e decisao publica de Quote.
+- Auditoria de eventos de seguranca sem secrets ou `publicCode` bruto.
 - DTO publico minimo, separado dos DTOs internos.
 - Isolamento por tenant em services e repositories.
 - Testes automatizados de dominio, services, repositories, actions e APIs.
@@ -74,6 +77,7 @@ server-side e dados isolados por `Organization`.
 | Diagnostico | Implementado | Registro/edicao enquanto a OS esta em diagnostico. |
 | Orcamento | Implementado | Quote em rascunho, itens, envio logico, aprovacao/rejeicao. |
 | Portal publico | Implementado | Consulta por `publicCode` e decisao publica de Quote enviado. |
+| Base de seguranca | Implementado | Headers HTTP, rate limiting e auditoria de seguranca. |
 | Dashboard | Nao implementado | A pagina interna atual e uma area de operacao com links. |
 | E-mail/WhatsApp | Nao implementado | O envio do orcamento e apenas registro logico. |
 | PDF/pagamento | Nao implementado | Fora do escopo do MVP atual. |
@@ -94,6 +98,10 @@ server-side e dados isolados por `Organization`.
 - Concorrencia otimista por status esperado.
 - Timeline/auditoria operacional.
 - `publicCode` nao sequencial como capability URL limitada.
+- Rate limiting com store em memoria para desenvolvimento/testes e store
+  PostgreSQL/Prisma para producao.
+- Auditoria de login, logout, bloqueios por rate limit e decisoes publicas.
+- Headers HTTP de seguranca com CSP inicial e HSTS somente em producao.
 - Calculo monetario com `Prisma.Decimal`.
 - Money DTO como string canonica com duas casas decimais.
 - Validacoes centralizadas de entrada e dominio.
@@ -125,6 +133,8 @@ O projeto usa Next.js App Router e uma separacao simples em camadas:
 - `src/server/db`: Prisma Client centralizado.
 - `src/server/repositories`: acesso a dados tenant-aware.
 - `src/server/services`: casos de uso server-side.
+- `src/server/security`: cabecalhos, rate limiting, auditoria e validacao de
+  configuracao de seguranca.
 - `prisma`: schema, migrations e seed.
 - `tests`: testes automatizados.
 - `docs`: documentacao tecnica e de portfolio.
@@ -181,10 +191,15 @@ disponivel quando o Quote esta em `SENT` e a ServiceOrder esta em
 - Cookies de sessao usam `httpOnly`.
 - Valores sensiveis nao devem usar prefixo `NEXT_PUBLIC`.
 - `.env` nao deve ser versionado.
+- Senhas, cookies, tokens, `tokenHash` e `publicCode` bruto nao devem aparecer
+  em logs ou auditoria.
+- Rate limit e auditoria usam hashes de identificadores sensiveis/publicos.
+- Em producao, rate limit deve usar PostgreSQL/Prisma e auditoria deve estar
+  habilitada em banco.
 
-Essas medidas reduzem riscos no escopo do MVP local, mas nao substituem hardening
-de producao, rate limiting, observabilidade, revisao de seguranca e politicas
-operacionais.
+Essas medidas reduzem riscos no escopo do MVP local, mas nao substituem
+observabilidade, revisao de seguranca, controles de borda e politicas
+operacionais de producao.
 
 ## Testes
 
@@ -194,12 +209,7 @@ Comando executado:
 npm run test
 ```
 
-Resultado real da ultima execucao local da Fase 7:
-
-- 32 arquivos de teste.
-- 220 testes passando.
-
-A suite cobre:
+A suite local cobre:
 
 - validacoes de dominio;
 - publicCode;
@@ -214,6 +224,8 @@ A suite cobre:
 - Diagnostic e Quote services/repositories/actions;
 - portal publico por `publicCode`;
 - aprovacao/rejeicao publica de Quote;
+- rate limiting e auditoria de seguranca;
+- cabecalhos HTTP de seguranca;
 - DTO publico minimo e isolamento de dados.
 
 Validacoes adicionais usadas no projeto:
@@ -314,6 +326,19 @@ Variaveis esperadas no `.env` local:
 ```env
 DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_dev?schema=public"
 
+FIXFLOW_APP_ENV="development"
+FIXFLOW_RATE_LIMIT_STORE="memory"
+FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
+FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_WINDOW_SECONDS="300"
+FIXFLOW_SECURITY_AUDIT_ENABLED="true"
+FIXFLOW_SECURITY_AUDIT_STORE="database"
+
 FIXFLOW_BOOTSTRAP_ORGANIZATION_NAME=""
 FIXFLOW_BOOTSTRAP_ORGANIZATION_SLUG=""
 FIXFLOW_BOOTSTRAP_USER_NAME=""
@@ -322,7 +347,9 @@ FIXFLOW_BOOTSTRAP_USER_PASSWORD=""
 ```
 
 Nao use secrets reais no repositorio. O arquivo `.env.example` deve permanecer
-apenas como modelo.
+apenas como modelo. A store `memory` de rate limit e somente para
+desenvolvimento/testes; producao deve configurar `FIXFLOW_RATE_LIMIT_STORE` como
+`database`.
 
 ## Usuario de desenvolvimento
 
@@ -417,6 +444,7 @@ docs/
 - `docs/service-order-workflow.md`
 - `docs/diagnostic-quotes.md`
 - `docs/public-portal.md`
+- `docs/security.md`
 - `docs/portfolio.md`
 - `docs/manual-qa.md`
 - `docs/local-development.md`
@@ -430,14 +458,15 @@ Implementado:
 - clientes e equipamentos;
 - ordens de servico;
 - diagnostico e orcamento;
-- portal publico por `publicCode`.
+- portal publico por `publicCode`;
+- base de seguranca com headers, rate limiting e auditoria.
 
 Proximos passos possiveis:
 
 - proposta/PDF;
 - envio externo controlado do link publico;
-- rate limiting no portal publico e login;
-- auditoria mais detalhada;
+- observabilidade e alertas;
+- auditoria mais detalhada e politica de retencao;
 - deploy;
 - CI;
 - testes E2E;
@@ -453,7 +482,7 @@ Nao ha datas prometidas para esses itens.
 - Sem envio real de email, WhatsApp ou SMS.
 - Sem PDF.
 - Sem pagamento.
-- Sem rate limiting.
+- Sem WAF, CAPTCHA ou observabilidade de producao.
 - Sem CI/CD.
 - Sem testes E2E.
 - Sem dashboard funcional.

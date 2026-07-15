@@ -18,6 +18,7 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 
 - [ ] Login com o usuario do seed funciona.
 - [ ] Credenciais invalidas exibem mensagem generica.
+- [ ] Tentativas repetidas de login sao bloqueadas por rate limit.
 - [ ] Area interna redireciona para login quando nao autenticada.
 - [ ] Logout invalida a sessao e volta para o fluxo de login.
 - [ ] `GET /api/me` retorna usuario seguro, sem `passwordHash` ou `tokenHash`.
@@ -95,6 +96,20 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] Confirmar atualizacao interna de Quote, ServiceOrder e timeline.
 - [ ] Repetir o fluxo em outra OS e rejeitar pelo portal publico.
 - [ ] Testar um `publicCode` invalido e confirmar pagina de nao encontrado.
+- [ ] Confirmar que consultas repetidas ao portal publico sao limitadas.
+- [ ] Confirmar que decisoes publicas repetidas sao limitadas.
+
+## Seguranca
+
+- [ ] Respostas HTTP incluem `X-Content-Type-Options`.
+- [ ] Respostas HTTP incluem `Referrer-Policy`.
+- [ ] Respostas HTTP incluem `Permissions-Policy`.
+- [ ] Respostas HTTP incluem protecao contra framing.
+- [ ] Respostas HTTP incluem Content-Security-Policy.
+- [ ] HSTS aparece somente em ambiente de producao.
+- [ ] Auditoria registra login bem-sucedido, login recusado e logout.
+- [ ] Auditoria registra bloqueio por rate limit e decisao publica.
+- [ ] Auditoria nao contem senha, cookie, token de sessao ou `publicCode` bruto.
 
 ## Validacoes automatizadas
 

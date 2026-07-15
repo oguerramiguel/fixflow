@@ -134,7 +134,7 @@ Nao use imagens falsas nem referencie arquivos que nao existem.
 - Sem pagamento.
 - Sem dashboard funcional.
 - Sem testes E2E.
-- Sem rate limiting.
+- Sem observabilidade de producao, WAF ou CAPTCHA.
 - Sem hardening completo de producao.
 
 Esses limites sao escolhas de escopo para um MVP local e podem orientar fases

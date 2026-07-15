@@ -17,6 +17,8 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 - Quote: orcamento de uma ordem de servico.
 - QuoteItem: item de orcamento.
 - ServiceOrderTimeline: evento de historico da ordem de servico.
+- RateLimitCounter: contador de rate limit por operacao, chave hash e janela.
+- SecurityAuditLog: evento minimizado de auditoria de seguranca.
 
 ## Relacionamentos
 
@@ -85,6 +87,7 @@ por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
 - `ServiceOrder.publicCode` e unico globalmente.
 - `Diagnostic` e unico por `[serviceOrderId, organizationId]`.
 - `Quote` e unico por `[serviceOrderId, organizationId]`.
+- `RateLimitCounter` e unico por `[operation, keyHash, windowStart]`.
 - `Equipment` tem unicidade em `[organizationId, serialNumber]`; PostgreSQL
   permite multiplos `NULL`, entao equipamentos sem serial nao entram em conflito.
 
@@ -266,6 +269,40 @@ erDiagram
   Quote ||--o{ QuoteItem : contains
   ServiceOrder ||--o{ ServiceOrderTimeline : records
 ```
+
+## Base de seguranca da Fase 8.1
+
+A migration `20260714000000_add_security_foundation` adiciona:
+
+- tabela `RateLimitCounter`;
+- tabela `SecurityAuditLog`;
+- indice unique de `RateLimitCounter` por `operation`, `keyHash` e
+  `windowStart`;
+- indices para limpeza por `windowExpiresAt`;
+- indices de auditoria por data, evento, Organization, User e `subjectHash`.
+
+`RateLimitCounter` usa janelas fixas. O codigo calcula `windowStart` a partir
+do horario atual e da duracao configurada para a operacao. A escrita usa
+`upsert` com incremento atomico do contador. A chave armazenada e `keyHash`, uma
+derivacao SHA-256 de operacao, origem minimizada e identificadores sensiveis ja
+hashados. Senha, token de sessao, cookie e `publicCode` bruto nunca entram na
+tabela.
+
+`SecurityAuditLog` armazena somente dados minimizados: tipo do evento,
+resultado, horario, ids internos quando aplicavel, hash de assunto publico ou
+sensivel, hash de origem e metadados estritamente necessarios. Ele nao possui
+foreign keys para evitar que falhas ou delecoes operacionais de auditoria
+afetem entidades de negocio.
+
+Limpeza recomendada para contadores antigos:
+
+```sql
+DELETE FROM "RateLimitCounter"
+WHERE "windowExpiresAt" < now() - interval '1 day';
+```
+
+A retencao de `SecurityAuditLog` deve ser definida antes de producao conforme
+politica operacional e requisitos de privacidade.
 
 ## Migration de autenticacao
 

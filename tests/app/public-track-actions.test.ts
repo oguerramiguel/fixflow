@@ -10,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   requireAuthenticatedContext: vi.fn(),
   approvePublicQuote: vi.fn(),
-  rejectPublicQuote: vi.fn()
+  rejectPublicQuote: vi.fn(),
+  enforceRateLimit: vi.fn(),
+  getSecurityRequestOrigin: vi.fn(),
+  recordSecurityAuditEvent: vi.fn()
 }));
 
 vi.mock("next/navigation", () => ({
@@ -30,10 +33,23 @@ vi.mock("@/server/services/public-tracking-service", () => ({
   rejectPublicQuote: mocks.rejectPublicQuote
 }));
 
+vi.mock("@/server/security/rate-limit-service", () => ({
+  enforceRateLimit: mocks.enforceRateLimit
+}));
+
+vi.mock("@/server/security/request-origin", () => ({
+  getSecurityRequestOrigin: mocks.getSecurityRequestOrigin
+}));
+
+vi.mock("@/server/security/security-audit-service", () => ({
+  recordSecurityAuditEvent: mocks.recordSecurityAuditEvent
+}));
+
 import {
   approvePublicQuoteAction,
   rejectPublicQuoteAction
 } from "@/app/track/[publicCode]/actions";
+import { RateLimitExceededError } from "@/server/security/rate-limit-types";
 
 function createFormData(values: Record<string, string>): FormData {
   const formData = new FormData();
@@ -48,6 +64,11 @@ function createFormData(values: Record<string, string>): FormData {
 describe("public tracking actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.enforceRateLimit.mockResolvedValue(undefined);
+    mocks.getSecurityRequestOrigin.mockResolvedValue({
+      originHash: "origin-hash"
+    });
+    mocks.recordSecurityAuditEvent.mockResolvedValue(undefined);
   });
 
   it("approves quote using route publicCode without authenticated context or browser ids", async () => {
@@ -68,8 +89,29 @@ describe("public tracking actions", () => {
     ).rejects.toThrow("redirect:/track/FF-ABCDEFG234");
 
     expect(mocks.requireAuthenticatedContext).not.toHaveBeenCalled();
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "PUBLIC_QUOTE_APPROVE",
+        origin: {
+          originHash: "origin-hash"
+        }
+      })
+    );
     expect(mocks.approvePublicQuote).toHaveBeenCalledWith("FF-ABCDEFG234");
+    expect(mocks.recordSecurityAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "PUBLIC_QUOTE_APPROVED",
+        outcome: "SUCCESS",
+        originHash: "origin-hash"
+      })
+    );
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/track/FF-ABCDEFG234");
+    expect(JSON.stringify(mocks.enforceRateLimit.mock.calls)).not.toContain(
+      "service-order-from-browser"
+    );
+    expect(JSON.stringify(mocks.recordSecurityAuditEvent.mock.calls)).not.toContain(
+      "FF-ABCDEFG234"
+    );
   });
 
   it("rejects quote using route publicCode and ignores FormData ids", async () => {
@@ -88,6 +130,11 @@ describe("public tracking actions", () => {
     ).rejects.toThrow("redirect:/track/FF-ABCDEFG234");
 
     expect(mocks.rejectPublicQuote).toHaveBeenCalledWith("FF-ABCDEFG234");
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "PUBLIC_QUOTE_REJECT"
+      })
+    );
   });
 
   it("normalizes redirect path after successful public decision", async () => {
@@ -118,6 +165,19 @@ describe("public tracking actions", () => {
     ).resolves.toEqual({
       error: "Este orcamento ja foi atualizado. Recarregue a pagina."
     });
+  });
+
+  it("returns a generic error and does not decide quote when rate limited", async () => {
+    mocks.enforceRateLimit.mockRejectedValueOnce(new RateLimitExceededError());
+
+    await expect(
+      approvePublicQuoteAction("FF-ABCDEFG234", {}, createFormData({}))
+    ).resolves.toEqual({
+      error: "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+    });
+
+    expect(mocks.approvePublicQuote).not.toHaveBeenCalled();
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
   it("does not treat internal authorization errors as public success", async () => {

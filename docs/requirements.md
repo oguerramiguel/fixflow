@@ -78,6 +78,11 @@ comunicacao com clientes e entrega dos equipamentos.
 - RNF013: Cookies de sessao devem ser HTTP-only, SameSite=Lax e seguros em producao.
 - RNF014: `organizationId` confiavel deve vir do User autenticado persistido no servidor.
 - RNF015: Respostas HTTP e DTOs nao devem expor `passwordHash`, token bruto ou `tokenHash`.
+- RNF016: Operacoes sensiveis devem ter rate limiting centralizado.
+- RNF017: Eventos de seguranca devem ser auditados sem armazenar secrets ou
+  identificadores publicos brutos.
+- RNF018: A aplicacao deve emitir cabecalhos HTTP de seguranca compativeis com
+  Next.js e React.
 
 ## Status da Fase 2
 
@@ -218,6 +223,30 @@ Continuam fora do escopo implementado:
 - envio automatico de e-mail ou WhatsApp;
 - PDF;
 - pagamentos.
+
+## Status da Fase 8.1
+
+A Fase 8.1 implementa a base de seguranca e preparacao para producao sem novas
+funcionalidades comerciais.
+
+Requisitos nao funcionais reforcados nesta fase:
+
+- RNF007: testes adicionados para rate limit, auditoria e cabecalhos.
+- RNF008: validacoes locais continuam obrigatorias.
+- RNF009: `.env.example` contem apenas exemplos seguros.
+- RNF016: rate limiting aplicado ao login, consulta publica e decisoes publicas.
+- RNF017: auditoria registra login, logout, bloqueios de rate limit e decisoes
+  publicas sem senha, cookie, token ou `publicCode` bruto.
+- RNF018: headers HTTP de seguranca e CSP inicial adicionados centralmente.
+
+Continuam fora do escopo implementado:
+
+- recuperacao de senha;
+- envio de email;
+- MFA;
+- deploy;
+- WAF, CAPTCHA e observabilidade de producao;
+- Row Level Security.
 
 ## Fora do escopo inicial
 

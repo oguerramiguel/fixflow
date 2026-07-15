@@ -20,6 +20,8 @@ dados sem criar abstracoes prematuras.
 - `src/server/db`: Prisma Client centralizado.
 - `src/server/repositories`: contexto, repositories de autenticacao e
   repositories de acesso a dados futuros.
+- `src/server/security`: cabecalhos HTTP, rate limiting, auditoria de
+  seguranca, hashing de identificadores sensiveis e validacao de configuracao.
 - `prisma`: schema, enums, relacionamentos e migrations.
 - `docs`: decisoes tecnicas e regras que precisam sobreviver entre tarefas.
 
@@ -59,6 +61,12 @@ A Fase 2 implementa autenticacao propria e limitada ao escopo atual:
 - `src/server/auth/authenticated-context.ts`: resolve User, Organization e role
   a partir do cookie de sessao.
 - `src/server/auth/authorization.ts`: base pequena de autorizacao por role.
+- `src/server/security/rate-limit-service.ts`: aplica rate limit antes de
+  operacoes sensiveis.
+- `src/server/security/security-audit-service.ts`: registra eventos de
+  seguranca sem secrets ou identificadores brutos.
+- `src/server/security/http-security-headers.ts`: define headers HTTP e CSP
+  consumidos pelo `next.config.ts`.
 
 Fluxo de login:
 
@@ -67,7 +75,9 @@ sequenceDiagram
   actor User
   participant LoginUI as Login UI
   participant Action as Login action
+  participant RateLimit as Rate limit
   participant Auth as Authentication service
+  participant Audit as Security audit
   participant Repo as User repository
   participant Password as Password verification
   participant Session as Session service
@@ -76,6 +86,7 @@ sequenceDiagram
 
   User->>LoginUI: email and password
   LoginUI->>Action: submit form
+  Action->>RateLimit: hash email + origem minimizada
   Action->>Auth: loginWithEmailAndPassword
   Auth->>Repo: find by normalized email
   Repo->>DB: User lookup
@@ -83,6 +94,7 @@ sequenceDiagram
   Auth->>Session: create opaque session
   Session->>DB: store tokenHash and expiresAt
   Action->>Cookie: set HTTP-only session cookie
+  Action->>Audit: LOGIN_SUCCEEDED ou LOGIN_REJECTED
 ```
 
 Fluxo de uma operacao autenticada futura:
@@ -252,6 +264,11 @@ sequenceDiagram
   Service-->>Page: DTO publico minimo
 ```
 
+Na Fase 8.1, a rota publica consome rate limit antes da consulta por
+`publicCode`. O codigo publico nao e armazenado bruto em chaves ou auditoria; a
+aplicacao usa hash do codigo normalizado quando ele e valido e hash generico
+para entradas invalidas.
+
 Fluxo publico de decisao de Quote:
 
 ```mermaid
@@ -308,6 +325,8 @@ concretos e foram ampliados na Fase 4:
   transicoes comerciais atomicas com ServiceOrder.
 - `public-service-order-repository`: consulta publica por `publicCode` com
   select minimo e decisao publica de Quote com updates otimistas em transacao.
+- `rate-limit-repository`: contador de janelas fixas por operacao e `keyHash`.
+- `security-audit-repository`: escrita de eventos de seguranca minimizados.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
@@ -325,6 +344,9 @@ O portal publico tambem respeita essa fronteira: a pagina server-side recebe o
 DTO publico, e o unico Client Component e o formulario de decisao. As Server
 Actions publicas nao aceitam `organizationId`, `serviceOrderId`, `quoteId`,
 status atual ou total vindos do browser.
+
+Rate limiting e auditoria tambem permanecem server-side. Client Components nao
+recebem store de rate limit, chaves, hashes de origem ou registros de auditoria.
 
 ## Regras de dominio
 
@@ -484,14 +506,19 @@ foi implementado nesta fase para manter o escopo controlado.
   atomicamente.
 - Valores monetarios usam `Decimal @db.Decimal(12, 2)`.
 - Docker Compose fornece PostgreSQL local; a app roda via npm nesta fase.
+- A store em memoria de rate limit e permitida somente para desenvolvimento e
+  testes. Producao deve usar PostgreSQL/Prisma.
+- Auditoria de seguranca registra eventos minimizados e nao bloqueia operacoes
+  legitimas quando a escrita de log falha.
 
 ## Evolucoes futuras
 
 - autenticacao;
 - contexto de Organization por request;
 - repositories para novos casos de uso reais;
-- auditoria de eventos;
+- politica de retencao e observabilidade de auditoria;
 - controle de permissoes por papel;
 - Row Level Security;
 - melhorias do portal publico e envio externo do link;
+- observabilidade de seguranca e alertas;
 - testes de integracao com banco.

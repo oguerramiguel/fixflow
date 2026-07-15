@@ -19,6 +19,12 @@ normaliza o email e delega a regra para `loginWithEmailAndPassword`.
 Credenciais invalidas retornam uma mensagem generica: `Email ou senha invalidos.`
 O sistema nao informa se o email existe ou se somente a senha esta incorreta.
 
+Antes da verificacao de credenciais, a Server Action de login aplica rate
+limiting com hash do email normalizado e hash da origem minimizada. A senha nunca
+participa da chave de rate limit. Tentativas recusadas por credenciais invalidas
+e logins bem-sucedidos sao registrados na auditoria de seguranca sem senha,
+hash de senha, cookie ou token de sessao.
+
 ## Normalizacao de email
 
 A normalizacao fica em `normalizeEmail` e aplica:
@@ -85,6 +91,10 @@ Ao localizar uma sessao expirada, o service a remove quando isso e simples e
 seguro. O logout invalida a sessao no banco usando o hash derivado do token
 bruto e depois limpa o cookie. Remover apenas o cookie nao e considerado logout
 suficiente.
+
+O logout registra evento de auditoria com `userId` e `organizationId` quando a
+sessao ainda pode ser resolvida antes da invalidacao. O token bruto do cookie
+nao e registrado.
 
 ## AuthenticatedContext
 
@@ -187,18 +197,21 @@ sequenceDiagram
 - token bruto nao deve ser persistido no banco;
 - `tokenHash` nao deve chegar ao browser;
 - login nao deve revelar existencia do usuario;
+- login deve ter rate limit sem usar senha ou token em chaves;
+- eventos de login e logout nao devem registrar secrets;
 - `organizationId` e role nao devem vir do cliente;
 - `/app` e `/api/me` devem resolver autenticacao no servidor;
 - logout deve invalidar sessao server-side.
 
 ## Limitacoes atuais
 
-- nao ha rate limiting no login;
 - nao ha recuperacao ou redefinicao de senha;
 - nao ha verificacao de email;
 - nao ha MFA;
 - nao ha sliding expiration;
 - nao ha job periodico para limpeza de sessoes expiradas;
+- nao ha job periodico para limpeza de contadores antigos de rate limit;
+- nao ha politica formal de retencao de auditoria;
 - nao ha gerenciamento de usuarios pela interface;
 - nao ha suporte a usuario em multiplas Organizations.
 

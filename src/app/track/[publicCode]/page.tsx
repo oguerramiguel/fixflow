@@ -10,6 +10,14 @@ import {
   rejectPublicQuoteAction
 } from "./actions";
 import { PublicQuoteDecisionForm } from "./public-quote-decision-form";
+import { enforceRateLimit } from "@/server/security/rate-limit-service";
+import {
+  RATE_LIMIT_EXCEEDED_MESSAGE,
+  RateLimitExceededError,
+  rateLimitOperations
+} from "@/server/security/rate-limit-types";
+import { getSecurityRequestOrigin } from "@/server/security/request-origin";
+import { createPublicCodeSecuritySubject } from "@/server/security/security-identifiers";
 import { getPublicServiceOrderByCode } from "@/server/services/public-tracking-service";
 
 type PublicTrackingPageProps = {
@@ -30,10 +38,55 @@ async function getPublicServiceOrderOrNotFound(publicCode: string) {
   }
 }
 
+async function isPublicLookupRateLimited(publicCode: string): Promise<boolean> {
+  const origin = await getSecurityRequestOrigin();
+  const publicCodeSubject = createPublicCodeSecuritySubject(publicCode);
+
+  try {
+    await enforceRateLimit({
+      operation: rateLimitOperations.publicPortalLookup,
+      keyParts: [],
+      subjectHash: publicCodeSubject.subjectHash,
+      origin
+    });
+
+    return false;
+  } catch (error) {
+    if (error instanceof RateLimitExceededError) {
+      return true;
+    }
+
+    throw error;
+  }
+}
+
+function PublicLookupRateLimitMessage() {
+  return (
+    <main className="min-h-screen px-6 py-10">
+      <section className="mx-auto w-full max-w-3xl">
+        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+          FixFlow
+        </p>
+        <h1 className="mt-3 text-3xl font-bold text-slate-950">
+          Nao foi possivel carregar o acompanhamento.
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {RATE_LIMIT_EXCEEDED_MESSAGE}
+        </p>
+      </section>
+    </main>
+  );
+}
+
 export default async function PublicTrackingPage({
   params
 }: PublicTrackingPageProps) {
   const { publicCode } = await params;
+
+  if (await isPublicLookupRateLimited(publicCode)) {
+    return <PublicLookupRateLimitMessage />;
+  }
+
   const serviceOrder = await getPublicServiceOrderOrNotFound(publicCode);
   const approveAction = approvePublicQuoteAction.bind(
     null,

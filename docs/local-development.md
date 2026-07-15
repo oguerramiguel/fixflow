@@ -49,6 +49,26 @@ Use esta `DATABASE_URL` no `.env` local:
 DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_dev?schema=public"
 ```
 
+Variaveis de seguranca recomendadas para desenvolvimento local:
+
+```env
+FIXFLOW_APP_ENV="development"
+FIXFLOW_RATE_LIMIT_STORE="memory"
+FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
+FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_WINDOW_SECONDS="300"
+FIXFLOW_SECURITY_AUDIT_ENABLED="true"
+FIXFLOW_SECURITY_AUDIT_STORE="database"
+```
+
+A store `memory` de rate limit e previsivel para desenvolvimento e testes, mas
+nao serve para multiplas instancias. Em producao, use `database`.
+
 O seed tambem exige:
 
 ```env
@@ -189,6 +209,7 @@ schema Prisma alterado sem decisao explicita.
 
 Existe um `Dockerfile`, mas esta fase nao documenta deploy de producao. O
 `docker-compose.yml` atual fornece apenas PostgreSQL local para desenvolvimento.
-Antes de producao, ainda seriam necessarios hardening, secrets reais em ambiente
-seguro, observabilidade, rate limiting, estrategia de deploy, CI e revisao de
+Antes de producao, ainda seriam necessarios secrets reais em ambiente seguro,
+observabilidade, rotina de limpeza de `RateLimitCounter`, retencao de
+`SecurityAuditLog`, estrategia de deploy, CI, controles de borda e revisao de
 seguranca.

@@ -32,6 +32,11 @@ Antes de qualquer consulta publica, o codigo e:
 Codigo invalido e tratado como ordem nao encontrada. Nao existe fallback para ID
 interno.
 
+Na Fase 8.1, consultas publicas tambem passam por rate limit antes da busca no
+banco. O `publicCode` bruto nao e armazenado em chave de rate limit nem em
+auditoria. Quando o formato e valido, o sistema usa hash do codigo normalizado;
+quando e invalido, usa um hash generico para entradas invalidas.
+
 ## Dados exibidos
 
 O DTO publico retorna somente:
@@ -137,6 +142,11 @@ Rejeicao publica altera atomicamente:
 O fluxo interno por OWNER/ADMIN continua existindo. Os dois caminhos respeitam
 os mesmos invariantes de status, transacao, concorrencia e timeline.
 
+As actions publicas de aprovacao e rejeicao tambem aplicam rate limit por
+origem minimizada e hash do `publicCode`. Decisoes registradas com sucesso sao
+auditadas como `PUBLIC_QUOTE_APPROVED` ou `PUBLIC_QUOTE_REJECTED`, sem expor
+Customer, IDs internos ao visitante ou `publicCode` bruto.
+
 ## Atomicidade e concorrencia
 
 A decisao publica usa transacao Prisma. O update de Quote filtra por status
@@ -232,7 +242,8 @@ Nesta fase nao ha:
 - pagamento;
 - upload;
 - comentarios publicos;
-- rate limiting distribuido ou CAPTCHA.
+- CAPTCHA;
+- controles de borda como WAF ou protecao anti-bot externa.
 
 ## Evolucoes futuras
 

@@ -41,6 +41,10 @@ function createConfig(
           limit: 2,
           windowSeconds: 60
         },
+        [rateLimitOperations.accountSetupAttempt]: {
+          limit: 2,
+          windowSeconds: 60
+        },
         [rateLimitOperations.publicPortalLookup]: {
           limit: 1,
           windowSeconds: 60
@@ -225,6 +229,28 @@ describe("rate limit service", () => {
         dependencies
       )
     ).rejects.toThrow(RateLimitExceededError);
+  });
+
+  it("rate limits account setup by origin and token hash without storing the raw token", async () => {
+    const store = new InMemoryRateLimitStore();
+    const dependencies = createDependencies(store);
+    const rawToken = "a".repeat(43);
+    const subjectHash = hashSecurityValue(rawToken);
+    const input = {
+      operation: rateLimitOperations.accountSetupAttempt,
+      keyParts: [subjectHash],
+      subjectHash,
+      origin,
+      now: new Date("2026-07-14T12:00:00.000Z")
+    };
+
+    await enforceRateLimit(input, dependencies);
+    await enforceRateLimit(input, dependencies);
+    await expect(enforceRateLimit(input, dependencies)).rejects.toThrow(
+      RateLimitExceededError
+    );
+
+    expect(JSON.stringify(store.snapshot())).not.toContain(rawToken);
   });
 
   it("keeps rate limit buckets isolated when organization id is part of the key", async () => {

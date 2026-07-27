@@ -56,6 +56,8 @@ FIXFLOW_APP_ENV="development"
 FIXFLOW_RATE_LIMIT_STORE="memory"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
@@ -150,6 +152,32 @@ npm run prisma:format
 
 Nao use `db push` como substituto das migrations neste projeto.
 
+A Fase 8.2A adiciona
+`20260727000000_add_user_management_invitations`. Para aplicar apenas migrations
+pendentes em ambiente controlado:
+
+```powershell
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
+```
+
+Em desenvolvimento local, `npx.cmd prisma migrate dev` continua valido. Nao use
+`prisma migrate reset`; a migration nova nao exige apagar dados existentes.
+
+## Convites locais
+
+Depois do login como OWNER:
+
+1. abra `http://localhost:3000/app/settings/users`;
+2. crie o convite;
+3. copie o link exibido;
+4. abra o link em janela anonima;
+5. defina a senha e entre por `/login`.
+
+O processo e manual nesta fase. Nao ha SMTP, envio de email nem senha
+temporaria. O link expira em 72 horas e o token bruto desaparece ao recarregar
+a tela administrativa.
+
 ## Seed
 
 O seed fica em `prisma/seed.ts` e roda com:
@@ -212,4 +240,5 @@ Existe um `Dockerfile`, mas esta fase nao documenta deploy de producao. O
 Antes de producao, ainda seriam necessarios secrets reais em ambiente seguro,
 observabilidade, rotina de limpeza de `RateLimitCounter`, retencao de
 `SecurityAuditLog`, estrategia de deploy, CI, controles de borda e revisao de
-seguranca.
+seguranca. Access logs do ambiente tambem devem ocultar tokens presentes em
+`/setup-account/[token]`.

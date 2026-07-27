@@ -64,6 +64,10 @@ export async function loginWithEmailAndPassword(
     throw createInvalidCredentialsError();
   }
 
+  if (user.disabledAt || !user.passwordHash) {
+    throw createInvalidCredentialsError();
+  }
+
   const passwordMatches = await dependencies.verifyPassword(
     input.password,
     user.passwordHash

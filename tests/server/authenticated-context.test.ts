@@ -67,6 +67,17 @@ describe("authenticated context", () => {
     ).rejects.toThrow(AuthenticationError);
   });
 
+  it("rejects an existing session after its user is disabled", async () => {
+    await expect(
+      resolveAuthenticatedContextFromSessionToken(
+        "still-persisted-session-token",
+        createDependencies({
+          findUserById: vi.fn(async () => null)
+        })
+      )
+    ).rejects.toThrow(AuthenticationError);
+  });
+
   it("uses the organizationId persisted on the user, not client input", async () => {
     const clientProvidedOrganizationId = "org-from-client";
     const context = await resolveAuthenticatedContextFromSessionToken(

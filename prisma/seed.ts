@@ -66,7 +66,8 @@ async function main(): Promise<void> {
       organizationId: organization.id,
       name: userName,
       passwordHash,
-      role: UserRole.OWNER
+      role: UserRole.OWNER,
+      disabledAt: null
     },
     create: {
       organizationId: organization.id,

@@ -61,6 +61,11 @@ server-side e dados isolados por `Organization`.
 - Cabecalhos HTTP de seguranca centralizados.
 - Rate limiting para login, consulta publica e decisao publica de Quote.
 - Auditoria de eventos de seguranca sem secrets ou `publicCode` bruto.
+- Gestao de usuarios da Organization exclusiva para OWNER.
+- Convites manuais com token de uso unico armazenado somente como hash.
+- Configuracao publica de conta em `/setup-account/[token]`.
+- Desativacao de usuario e revogacao de todas as suas sessoes.
+- Protecao transacional do ultimo OWNER ativo.
 - DTO publico minimo, separado dos DTOs internos.
 - Isolamento por tenant em services e repositories.
 - Testes automatizados de dominio, services, repositories, actions e APIs.
@@ -78,6 +83,7 @@ server-side e dados isolados por `Organization`.
 | Orcamento | Implementado | Quote em rascunho, itens, envio logico, aprovacao/rejeicao. |
 | Portal publico | Implementado | Consulta por `publicCode` e decisao publica de Quote enviado. |
 | Base de seguranca | Implementado | Headers HTTP, rate limiting e auditoria de seguranca. |
+| Usuarios e convites | Implementado | OWNER gerencia equipe, convites manuais, roles, status e sessoes. |
 | Dashboard | Nao implementado | A pagina interna atual e uma area de operacao com links. |
 | E-mail/WhatsApp | Nao implementado | O envio do orcamento e apenas registro logico. |
 | PDF/pagamento | Nao implementado | Fora do escopo do MVP atual. |
@@ -101,6 +107,10 @@ server-side e dados isolados por `Organization`.
 - Rate limiting com store em memoria para desenvolvimento/testes e store
   PostgreSQL/Prisma para producao.
 - Auditoria de login, logout, bloqueios por rate limit e decisoes publicas.
+- Convites com token aleatorio de 32 bytes, SHA-256 persistido e validade de 72 horas.
+- Consumo atomico de convite e ativacao sem senha temporaria.
+- Sessao revalida User ativo e Organization persistida a cada contexto.
+- Lock transacional da Organization para proteger o ultimo OWNER ativo.
 - Headers HTTP de seguranca com CSP inicial e HSTS somente em producao.
 - Calculo monetario com `Prisma.Decimal`.
 - Money DTO como string canonica com duas casas decimais.
@@ -160,6 +170,15 @@ sao revalidadas no servidor.
 13. Cliente aprova ou rejeita o Quote enviado.
 14. Sistema atualiza Quote, ServiceOrder e timeline de forma atomica.
 
+O fluxo administrativo de usuarios e separado do fluxo operacional:
+
+1. OWNER acessa `/app/settings/users`.
+2. OWNER cria um convite com nome, email e role.
+3. O sistema cria um User sem senha e retorna um link uma unica vez.
+4. O OWNER compartilha o link manualmente.
+5. O convidado define a propria senha em `/setup-account/[token]`.
+6. O token e consumido atomicamente e o usuario passa a poder autenticar.
+
 ## Portal publico
 
 O portal publico fica em:
@@ -188,6 +207,9 @@ disponivel quando o Quote esta em `SENT` e a ServiceOrder esta em
 - O DTO publico nao expoe dados de Customer nem IDs internos.
 - Senhas nao sao armazenadas em texto puro.
 - Tokens brutos de sessao nao sao persistidos no banco.
+- Tokens brutos de convite nao sao persistidos, logados ou auditados.
+- Usuario convidado ou desativado nao consegue autenticar.
+- Sessoes existentes deixam de autorizar assim que o User e desativado.
 - Cookies de sessao usam `httpOnly`.
 - Valores sensiveis nao devem usar prefixo `NEXT_PUBLIC`.
 - `.env` nao deve ser versionado.
@@ -225,6 +247,7 @@ A suite local cobre:
 - portal publico por `publicCode`;
 - aprovacao/rejeicao publica de Quote;
 - rate limiting e auditoria de seguranca;
+- gestao de usuarios, convites, setup de conta, roles e sessoes;
 - cabecalhos HTTP de seguranca;
 - DTO publico minimo e isolamento de dados.
 
@@ -330,6 +353,8 @@ FIXFLOW_APP_ENV="development"
 FIXFLOW_RATE_LIMIT_STORE="memory"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
@@ -408,6 +433,9 @@ Scripts reais do `package.json`:
 10. Abrir o portal publico com o `publicCode`.
 11. Aprovar ou rejeitar o Quote pelo portal publico.
 12. Conferir status e timeline na area interna.
+13. Como OWNER, abrir `/app/settings/users` e criar um convite.
+14. Copiar o link exibido, abrir em janela anonima e definir a senha.
+15. Confirmar login do convidado e revogacao de sessoes pela tela administrativa.
 
 ## Screenshots
 
@@ -459,7 +487,8 @@ Implementado:
 - ordens de servico;
 - diagnostico e orcamento;
 - portal publico por `publicCode`;
-- base de seguranca com headers, rate limiting e auditoria.
+- base de seguranca com headers, rate limiting e auditoria;
+- gestao de usuarios, convites manuais e sessoes.
 
 Proximos passos possiveis:
 
@@ -471,8 +500,8 @@ Proximos passos possiveis:
 - CI;
 - testes E2E;
 - melhorias visuais;
-- observabilidade;
-- hardening de producao.
+- hardening de producao;
+- envio de convite por email e recuperacao de senha.
 
 Nao ha datas prometidas para esses itens.
 
@@ -486,6 +515,8 @@ Nao ha datas prometidas para esses itens.
 - Sem CI/CD.
 - Sem testes E2E.
 - Sem dashboard funcional.
+- Convites precisam ser compartilhados manualmente pelo OWNER.
+- Sem recuperacao de senha ou envio automatico de convite.
 - Portal publico baseado em `publicCode` como capability URL.
 - Docker Compose fornece PostgreSQL local; nao e um setup completo de producao.
 

@@ -60,6 +60,11 @@ comunicacao com clientes e entrega dos equipamentos.
 - RF019: O sistema deve diferenciar falha de autenticacao de falha de autorizacao.
 - RF020: O sistema deve permitir aprovacao ou rejeicao publica de Quote `SENT`
   por `publicCode`.
+- RF021: OWNER deve gerenciar usuarios, roles, status e sessoes da propria
+  Organization.
+- RF022: O sistema deve permitir convite manual e configuracao segura de conta
+  com token de uso unico.
+- RF023: Desativar User deve revogar suas sessoes e impedir novos acessos.
 
 ## Requisitos nao funcionais
 
@@ -83,14 +88,17 @@ comunicacao com clientes e entrega dos equipamentos.
   identificadores publicos brutos.
 - RNF018: A aplicacao deve emitir cabecalhos HTTP de seguranca compativeis com
   Next.js e React.
+- RNF019: Token bruto de convite nao deve ser persistido, logado ou auditado.
+- RNF020: Operacoes de User devem exigir Organization autenticada e impedir
+  remocao do ultimo OWNER ativo.
 
 ## Status da Fase 2
 
 A Fase 2 implementa autenticacao basica, sessao opaca persistida,
 `AuthenticatedContext`, autorizacao simples por role, `/login`, `/app`,
-`/api/me`, logout e bootstrap de desenvolvimento. O escopo ainda nao inclui
-cadastro publico, convite de usuarios, recuperacao de senha, verificacao de
-email, MFA, CRUDs de negocio ou dashboard com metricas.
+`/api/me`, logout e bootstrap de desenvolvimento. Naquela fase, o escopo ainda
+nao incluia cadastro publico, convite de usuarios, recuperacao de senha,
+verificacao de email, MFA, CRUDs de negocio ou dashboard com metricas.
 
 ## Status da Fase 3
 
@@ -247,6 +255,27 @@ Continuam fora do escopo implementado:
 - deploy;
 - WAF, CAPTCHA e observabilidade de producao;
 - Row Level Security.
+
+## Status da Fase 8.2A
+
+A Fase 8.2A implementa gestao de usuarios, convites e sessoes:
+
+- RF021: OWNER lista e altera somente Users da propria Organization;
+- RF022: convite manual com token aleatorio, hash persistido, expiracao de 72
+  horas, revogacao, reemissao e setup de senha pelo convidado;
+- RF023: User desativado nao autentica, sessoes antigas deixam de autorizar e
+  desativacao remove todas as AuthSession;
+- RNF019: auditoria e rate limit usam hashes, sem senha ou token bruto;
+- RNF020: actions e services reautorizam OWNER, repositories filtram tenant e
+  lock transacional protege o ultimo OWNER ativo.
+
+Continuam fora do escopo:
+
+- envio de email;
+- recuperacao de senha;
+- MFA;
+- verificacao de email;
+- usuario em multiplas Organizations.
 
 ## Fora do escopo inicial
 

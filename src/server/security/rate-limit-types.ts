@@ -5,6 +5,7 @@ export const RATE_LIMIT_EXCEEDED_MESSAGE =
 
 export const rateLimitOperations = {
   loginAttempt: "LOGIN_ATTEMPT",
+  accountSetupAttempt: "ACCOUNT_SETUP_ATTEMPT",
   publicPortalLookup: "PUBLIC_PORTAL_LOOKUP",
   publicQuoteApprove: "PUBLIC_QUOTE_APPROVE",
   publicQuoteReject: "PUBLIC_QUOTE_REJECT"

@@ -1,0 +1,144 @@
+"use client";
+
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import {
+  inviteUserAction,
+  type UserManagementActionState
+} from "./actions";
+import { InvitationLinkPanel } from "./invitation-link-panel";
+
+function InviteSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex h-11 items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+    >
+      {pending ? "Criando convite..." : "Convidar usuario"}
+    </button>
+  );
+}
+
+export function InviteUserForm() {
+  const [state, formAction] = useActionState<
+    UserManagementActionState,
+    FormData
+  >(inviteUserAction, {});
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5">
+      <h3 className="text-lg font-bold text-slate-950">Novo convite</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        O usuario definira a propria senha pelo link gerado. Nenhum email sera
+        enviado nesta fase.
+      </p>
+
+      <form action={formAction} className="mt-5 grid gap-5 md:grid-cols-2">
+        <div>
+          <label htmlFor="invite-name" className="text-sm font-medium text-slate-800">
+            Nome
+          </label>
+          <input
+            id="invite-name"
+            name="name"
+            type="text"
+            required
+            minLength={2}
+            maxLength={120}
+            defaultValue={state.values?.name}
+            aria-describedby="invite-name-error"
+            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          />
+          {state.fieldErrors?.name ? (
+            <p id="invite-name-error" className="mt-2 text-sm text-red-700">
+              {state.fieldErrors.name}
+            </p>
+          ) : null}
+        </div>
+
+        <div>
+          <label
+            htmlFor="invite-email"
+            className="text-sm font-medium text-slate-800"
+          >
+            Email
+          </label>
+          <input
+            id="invite-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            maxLength={254}
+            defaultValue={state.values?.email}
+            aria-describedby="invite-email-error"
+            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          />
+          {state.fieldErrors?.email ? (
+            <p id="invite-email-error" className="mt-2 text-sm text-red-700">
+              {state.fieldErrors.email}
+            </p>
+          ) : null}
+        </div>
+
+        <div>
+          <label
+            htmlFor="invite-role"
+            className="text-sm font-medium text-slate-800"
+          >
+            Funcao
+          </label>
+          <select
+            id="invite-role"
+            name="role"
+            required
+            defaultValue={state.values?.role ?? "TECHNICIAN"}
+            aria-describedby="invite-role-error"
+            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          >
+            <option value="OWNER">Proprietario</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="TECHNICIAN">Tecnico</option>
+          </select>
+          {state.fieldErrors?.role ? (
+            <p id="invite-role-error" className="mt-2 text-sm text-red-700">
+              {state.fieldErrors.role}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex items-end">
+          <InviteSubmitButton />
+        </div>
+      </form>
+
+      {state.error ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          {state.error}
+        </p>
+      ) : null}
+
+      {state.success ? (
+        <p
+          role="status"
+          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          {state.success}
+        </p>
+      ) : null}
+
+      {state.setupPath ? (
+        <InvitationLinkPanel
+          setupPath={state.setupPath}
+          expiresAt={state.expiresAt}
+        />
+      ) : null}
+    </div>
+  );
+}

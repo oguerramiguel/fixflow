@@ -3,9 +3,8 @@
 ## Objetivo
 
 A autenticacao atual cria uma fronteira server-side para usuarios internos do
-FixFlow. O objetivo da Fase 2 e permitir login por email e senha, persistir
-sessoes opacas no PostgreSQL e construir um contexto confiavel de Organization
-para as proximas funcionalidades.
+FixFlow. A Fase 2 implementou login e sessoes opacas. A Fase 8.2A adicionou
+gestao de usuarios, convites manuais, desativacao e revogacao de sessoes.
 
 Esta implementacao nao e apresentada como recomendacao universal para todos os
 sistemas de producao. Ela e uma base explicita para demonstrar o fluxo de
@@ -18,6 +17,8 @@ normaliza o email e delega a regra para `loginWithEmailAndPassword`.
 
 Credenciais invalidas retornam uma mensagem generica: `Email ou senha invalidos.`
 O sistema nao informa se o email existe ou se somente a senha esta incorreta.
+Usuarios desativados e convidados que ainda nao definiram senha recebem a mesma
+mensagem generica e nenhuma sessao e criada.
 
 Antes da verificacao de credenciais, a Server Action de login aplica rate
 limiting com hash do email normalizado e hash da origem minimizada. A senha nunca
@@ -92,6 +93,11 @@ seguro. O logout invalida a sessao no banco usando o hash derivado do token
 bruto e depois limpa o cookie. Remover apenas o cookie nao e considerado logout
 suficiente.
 
+OWNER pode revogar todas as sessoes de um User da propria Organization. A
+desativacao do User e a remocao de todas as suas sessoes ocorrem na mesma
+transacao. A aplicacao usa exclusao das linhas de `AuthSession` como revogacao;
+nao existe flag de revogacao separada nesta fase.
+
 O logout registra evento de auditoria com `userId` e `organizationId` quando a
 sessao ainda pode ser resolvida antes da invalidacao. O token bruto do cookie
 nao e registrado.
@@ -111,8 +117,10 @@ O `organizationId` confiavel vem do User persistido no banco:
 3. localiza `AuthSession`;
 4. valida `expiresAt`;
 5. carrega o User;
-6. usa `User.organizationId` e `User.role`;
-7. constroi `AuthenticatedContext`.
+6. exige `disabledAt = null` e `passwordHash` preenchido;
+7. confirma a relacao com uma Organization persistida;
+8. usa `User.organizationId` e `User.role`;
+9. constroi `AuthenticatedContext`.
 
 `organizationId` nao vem de query string, body, header do browser, campo hidden,
 localStorage, rota dinamica ou cookie separado controlado pelo cliente.
@@ -129,6 +137,44 @@ A base de autorizacao usa `UserRole` com os valores existentes:
 `AuthorizationError` quando o usuario esta autenticado, mas nao possui permissao.
 Isso e diferente de `AuthenticationError`, usado para ausencia de autenticacao
 ou credenciais invalidas.
+
+Na gestao de usuarios da Fase 8.2A:
+
+- somente OWNER lista ou altera usuarios;
+- ADMIN e TECHNICIAN sao recusados novamente no service e na Server Action;
+- OWNER nao altera a propria role;
+- OWNER nao desativa a propria conta;
+- o ultimo OWNER ativo nao pode ser desativado ou rebaixado;
+- todos os IDs de User sao combinados com o `organizationId` autenticado.
+
+## Convite e configuracao de conta
+
+OWNER cria o convite em `/app/settings/users` informando nome, email e role. O
+email continua unico globalmente. O User e criado com `passwordHash = null`;
+nenhuma senha temporaria e gerada.
+
+O token de configuracao:
+
+- possui 32 bytes aleatorios e codificacao Base64URL;
+- e mostrado somente no retorno da criacao ou reemissao;
+- e persistido apenas como SHA-256 em `UserInvitation.tokenHash`;
+- expira em 72 horas;
+- pode ser revogado;
+- funciona uma unica vez.
+
+O OWNER copia e compartilha o link manualmente. Nao existe envio de email nesta
+fase. Convite expirado ou revogado pode ser reemitido; isso gera token novo e
+invalida o anterior.
+
+Em `/setup-account/[token]`, o convidado define e confirma a propria senha. A
+senha usa a mesma politica e o mesmo bcrypt cost 12 do login. A pagina e a
+Server Action aplicam rate limit por origem. Token invalido, expirado, revogado,
+utilizado ou associado a User desativado produz a mesma mensagem generica.
+
+O consumo usa update condicional por `tokenHash`, `usedAt`, `revokedAt` e
+`expiresAt`. Marcar `usedAt` e preencher `User.passwordHash` ocorrem na mesma
+transacao. Depois do sucesso, o usuario faz login normalmente; nao ha login
+automatico pelo link.
 
 ## Bootstrap de desenvolvimento
 
@@ -199,6 +245,9 @@ sequenceDiagram
 - login nao deve revelar existencia do usuario;
 - login deve ter rate limit sem usar senha ou token em chaves;
 - eventos de login e logout nao devem registrar secrets;
+- token bruto de convite nao deve ser persistido, logado ou auditado;
+- consumo concorrente do convite nao deve ativar duas vezes;
+- User desativado nao deve autenticar nem conservar acesso por sessao antiga;
 - `organizationId` e role nao devem vir do cliente;
 - `/app` e `/api/me` devem resolver autenticacao no servidor;
 - logout deve invalidar sessao server-side.
@@ -212,8 +261,8 @@ sequenceDiagram
 - nao ha job periodico para limpeza de sessoes expiradas;
 - nao ha job periodico para limpeza de contadores antigos de rate limit;
 - nao ha politica formal de retencao de auditoria;
-- nao ha gerenciamento de usuarios pela interface;
 - nao ha suporte a usuario em multiplas Organizations.
+- nao ha envio automatico de convite;
 
 Esses pontos sao riscos ou evolucoes futuras, nao funcionalidades simuladas na
-Fase 2.
+versao atual.

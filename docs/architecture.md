@@ -16,7 +16,7 @@ dados sem criar abstracoes prematuras.
 - `src/domain/services`: regras de negocio puras e testaveis.
 - `src/domain/errors`: erros de dominio.
 - `src/server/auth`: hashing de senha, login, sessao, cookie, contexto
-  autenticado e autorizacao por role.
+  autenticado, autorizacao por role e token de setup de conta.
 - `src/server/db`: Prisma Client centralizado.
 - `src/server/repositories`: contexto, repositories de autenticacao e
   repositories de acesso a dados futuros.
@@ -24,6 +24,11 @@ dados sem criar abstracoes prematuras.
   seguranca, hashing de identificadores sensiveis e validacao de configuracao.
 - `prisma`: schema, enums, relacionamentos e migrations.
 - `docs`: decisoes tecnicas e regras que precisam sobreviver entre tarefas.
+
+Na Fase 8.2A, `src/server/services/user-management-service.ts` coordena casos
+de uso OWNER-only e `account-setup-service.ts` coordena o consumo publico do
+convite. O acesso a User, UserInvitation e revogacao administrativa de
+AuthSession fica em `user-management-repository.ts`.
 
 ## Fluxo conceitual de uma requisicao
 
@@ -95,6 +100,31 @@ sequenceDiagram
   Session->>DB: store tokenHash and expiresAt
   Action->>Cookie: set HTTP-only session cookie
   Action->>Audit: LOGIN_SUCCEEDED ou LOGIN_REJECTED
+```
+
+Fluxo de convite e setup da Fase 8.2A:
+
+```mermaid
+sequenceDiagram
+  actor Owner as OWNER
+  participant UI as /app/settings/users
+  participant Service as User management service
+  participant Repo as User management repository
+  participant DB as PostgreSQL
+  actor Invitee as Convidado
+  participant Setup as /setup-account/[token]
+
+  Owner->>UI: nome, email e role
+  UI->>Service: contexto autenticado + input
+  Service->>Service: exigir OWNER e gerar token
+  Service->>Repo: User sem senha + tokenHash
+  Repo->>DB: transacao User + UserInvitation
+  Service-->>Owner: link bruto exibido uma vez
+  Owner-->>Invitee: compartilhamento manual
+  Invitee->>Setup: senha propria
+  Setup->>Service: token bruto + senha
+  Service->>Repo: tokenHash + passwordHash
+  Repo->>DB: claim condicional + ativacao atomica
 ```
 
 Fluxo de uma operacao autenticada futura:
@@ -327,10 +357,19 @@ concretos e foram ampliados na Fase 4:
   select minimo e decisao publica de Quote com updates otimistas em transacao.
 - `rate-limit-repository`: contador de janelas fixas por operacao e `keyHash`.
 - `security-audit-repository`: escrita de eventos de seguranca minimizados.
+- `user-management-repository`: listagem tenant-aware de User, convite,
+  alteracao de role, desativacao, reativacao, revogacao de sessoes e consumo
+  atomico de UserInvitation.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
 nao oferece busca interna por OS usando apenas o ID da entidade.
+
+O repository de usuarios tambem nao aceita `organizationId` vindo do input. As
+mutacoes procuram User por `id + context.organizationId`. Desativacao e mudanca
+de role bloqueiam a linha da Organization com `SELECT ... FOR UPDATE` antes de
+contar OWNERs ativos, serializando operacoes que poderiam remover o ultimo
+OWNER.
 
 ## Fronteiras server-side
 
@@ -347,6 +386,10 @@ status atual ou total vindos do browser.
 
 Rate limiting e auditoria tambem permanecem server-side. Client Components nao
 recebem store de rate limit, chaves, hashes de origem ou registros de auditoria.
+
+A pagina publica de setup nao usa `AuthenticatedContext`. Ela recebe o token da
+rota, mas repository e auditoria recebem apenas SHA-256. A UI administrativa
+recebe o link bruto somente no estado efemero da action de criacao ou reemissao.
 
 ## Regras de dominio
 
@@ -493,6 +536,11 @@ foi implementado nesta fase para manter o escopo controlado.
 - `AuthSession` nao possui `organizationId`; o tenant vem do User autenticado.
 - A expiracao da sessao e fixa em 7 dias, sem sliding expiration nesta fase.
 - `User.email` permanece unico globalmente nesta fase.
+- `User.disabledAt` representa desativacao; User nunca e apagado pela interface.
+- `User.passwordHash = null` representa conta convidada ainda nao configurada.
+- `UserInvitation` guarda somente hash SHA-256, expira em 72 horas e e de uso
+  unico.
+- Revogacao de todas as sessoes usa exclusao server-side de AuthSession.
 - `ServiceOrder.publicCode` e unico e nao deve ser sequencial.
 - `publicCode` funciona como link publico de acompanhamento, nao como
   autenticacao administrativa.
@@ -513,8 +561,8 @@ foi implementado nesta fase para manter o escopo controlado.
 
 ## Evolucoes futuras
 
-- autenticacao;
-- contexto de Organization por request;
+- envio de convite por email e recuperacao de senha;
+- MFA e verificacao de email;
 - repositories para novos casos de uso reais;
 - politica de retencao e observabilidade de auditoria;
 - controle de permissoes por papel;

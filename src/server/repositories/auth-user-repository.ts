@@ -6,8 +6,9 @@ export type AuthUserForLogin = {
   organizationId: string;
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
   role: UserRole;
+  disabledAt: Date | null;
 };
 
 export type AuthenticatedContextUserRecord = {
@@ -32,9 +33,12 @@ export type CurrentUserRecord = {
 export async function findUserByEmailForAuthentication(
   normalizedEmail: string
 ): Promise<AuthUserForLogin | null> {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: {
-      email: normalizedEmail
+      email: normalizedEmail,
+      organization: {
+        is: {}
+      }
     },
     select: {
       id: true,
@@ -42,7 +46,8 @@ export async function findUserByEmailForAuthentication(
       name: true,
       email: true,
       passwordHash: true,
-      role: true
+      role: true,
+      disabledAt: true
     }
   });
 }
@@ -50,9 +55,16 @@ export async function findUserByEmailForAuthentication(
 export async function findAuthenticatableUserById(
   userId: string
 ): Promise<AuthenticatedContextUserRecord | null> {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: {
-      id: userId
+      id: userId,
+      disabledAt: null,
+      passwordHash: {
+        not: null
+      },
+      organization: {
+        is: {}
+      }
     },
     select: {
       id: true,
@@ -65,9 +77,16 @@ export async function findAuthenticatableUserById(
 export async function findCurrentUserById(
   userId: string
 ): Promise<CurrentUserRecord | null> {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: {
-      id: userId
+      id: userId,
+      disabledAt: null,
+      passwordHash: {
+        not: null
+      },
+      organization: {
+        is: {}
+      }
     },
     select: {
       id: true,

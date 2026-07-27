@@ -3,6 +3,14 @@ export const securityAuditEventTypes = {
   loginRejected: "LOGIN_REJECTED",
   logout: "LOGOUT",
   rateLimitBlocked: "RATE_LIMIT_BLOCKED",
+  userInvited: "USER_INVITED",
+  userInvitationRevoked: "USER_INVITATION_REVOKED",
+  userInvitationUsed: "USER_INVITATION_USED",
+  userRoleChanged: "USER_ROLE_CHANGED",
+  userDisabled: "USER_DISABLED",
+  userReactivated: "USER_REACTIVATED",
+  userSessionsRevoked: "USER_SESSIONS_REVOKED",
+  userAdminOperationRejected: "USER_ADMIN_OPERATION_REJECTED",
   publicQuoteApproved: "PUBLIC_QUOTE_APPROVED",
   publicQuoteRejected: "PUBLIC_QUOTE_REJECTED"
 } as const;

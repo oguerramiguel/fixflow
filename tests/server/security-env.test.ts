@@ -10,6 +10,8 @@ const productionEnv = {
   FIXFLOW_RATE_LIMIT_STORE: "database",
   FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT: "5",
   FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS: "300",
+  FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT: "5",
+  FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS: "300",
   FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT: "60",
   FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS: "60",
   FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT: "5",
@@ -40,6 +42,10 @@ describe("security runtime config", () => {
     expect(config.appEnvironment).toBe("production");
     expect(config.rateLimit.store).toBe("database");
     expect(config.rateLimit.policies.LOGIN_ATTEMPT).toEqual({
+      limit: 5,
+      windowSeconds: 300
+    });
+    expect(config.rateLimit.policies.ACCOUNT_SETUP_ATTEMPT).toEqual({
       limit: 5,
       windowSeconds: 300
     });

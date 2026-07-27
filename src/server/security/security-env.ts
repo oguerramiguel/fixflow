@@ -38,6 +38,10 @@ const defaultRateLimitPolicies: Record<RateLimitOperation, RateLimitPolicy> = {
     limit: 5,
     windowSeconds: 300
   },
+  [rateLimitOperations.accountSetupAttempt]: {
+    limit: 5,
+    windowSeconds: 300
+  },
   [rateLimitOperations.publicPortalLookup]: {
     limit: 60,
     windowSeconds: 60
@@ -56,6 +60,10 @@ const rateLimitPolicyEnvKeys = {
   [rateLimitOperations.loginAttempt]: {
     limit: "FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT",
     windowSeconds: "FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS"
+  },
+  [rateLimitOperations.accountSetupAttempt]: {
+    limit: "FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT",
+    windowSeconds: "FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS"
   },
   [rateLimitOperations.publicPortalLookup]: {
     limit: "FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT",

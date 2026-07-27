@@ -9,6 +9,7 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 
 - Organization: representa a assistencia tecnica e o tenant.
 - User: usuario interno da Organization.
+- UserInvitation: convite de configuracao de conta para um User.
 - AuthSession: sessao opaca persistida para um User autenticado.
 - Customer: cliente da assistencia.
 - Equipment: equipamento vinculado a um cliente.
@@ -25,6 +26,7 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 - Organization possui usuarios, clientes, equipamentos, ordens, diagnosticos,
   orcamentos, itens de orcamento e timeline.
 - User possui varias AuthSession.
+- User possui no maximo uma UserInvitation corrente.
 - Customer possui Equipment e ServiceOrder.
 - Equipment pertence a Customer e pode aparecer em varias ServiceOrder.
 - ServiceOrder possui no maximo um Diagnostic, no maximo um Quote e varios
@@ -42,9 +44,14 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
   diferentes em Organizations distintas. Um modelo de memberships pode ser
   avaliado se o mesmo usuario precisar
   pertencer a varias Organizations.
-- `User.passwordHash` e obrigatorio porque, nesta fase, usuarios internos
-  autenticam por senha. OAuth ou provedores externos futuros exigiriam uma
-  decisao de modelagem mais ampla.
+- `User.passwordHash` e nullable somente para conta convidada ainda nao
+  configurada. Login e contexto autenticado exigem hash preenchido.
+- `User.disabledAt` representa desativacao sem exclusao fisica. `NULL` significa
+  que a conta nao esta desativada.
+- `UserInvitation.tokenHash` guarda SHA-256 do token aleatorio. O token bruto
+  existe apenas na criacao/reemissao e durante o acesso ao link.
+- `UserInvitation` usa `expiresAt`, `usedAt` e `revokedAt`; o banco impede que
+  uso e revogacao coexistam no mesmo registro.
 - `AuthSession` nao possui `organizationId`. Ela pertence ao User, e a
   Organization confiavel e resolvida a partir do User persistido.
 - `AuthSession.tokenHash` armazena o hash SHA-256 deterministico do token bruto.
@@ -74,6 +81,8 @@ Indices iniciais priorizam:
 - timeline de uma ServiceOrder ordenada por criacao;
 - quotes por ServiceOrder e status;
 - sessoes por User;
+- usuarios por Organization, role e estado de desativacao;
+- convites por tokenHash, Organization e expiracao;
 - limpeza futura de sessoes por `expiresAt`.
 
 `AuthSession.tokenHash` usa constraint `unique`, que ja cria indice para busca
@@ -84,6 +93,8 @@ por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
 - `Organization.slug` e unico.
 - `User.email` e unico globalmente.
 - `AuthSession.tokenHash` e unico globalmente.
+- `UserInvitation.tokenHash` e unico globalmente.
+- `UserInvitation.userId` e unico; existe um convite corrente por User.
 - `ServiceOrder.publicCode` e unico globalmente.
 - `Diagnostic` e unico por `[serviceOrderId, organizationId]`.
 - `Quote` e unico por `[serviceOrderId, organizationId]`.
@@ -100,6 +111,39 @@ garante isolamento se o codigo consultar apenas por IDs isolados.
 `AuthSession` nao e entidade de negocio de uma assistencia tecnica. Ela nao
 recebe `organizationId` diretamente; o contexto da Organization vem do User
 autenticado associado a sessao.
+
+## User e UserInvitation na Fase 8.2A
+
+Os estados da conta sao derivados:
+
+- convidado: `passwordHash IS NULL` e `disabledAt IS NULL`;
+- ativo: `passwordHash IS NOT NULL` e `disabledAt IS NULL`;
+- desativado: `disabledAt IS NOT NULL`.
+
+`UserInvitation` possui `organizationId` proprio e relacao composta
+`[userId, organizationId] -> User[id, organizationId]`. Isso impede associar
+convite de uma Organization a User de outra. Excluir UserInvitation nunca
+exclui User. A relacao usa cascade apenas no sentido User removido para convite,
+embora exclusao de User nao exista na interface.
+
+Criacao de User convidado e UserInvitation ocorre na mesma transacao. O email
+permanece unique globalmente. A aplicacao retorna mensagem generica para
+conflito, evitando revelar se o email pertence a outra Organization.
+
+Consumo atomico primeiro executa update condicional de UserInvitation por:
+
+- `tokenHash`;
+- `usedAt IS NULL`;
+- `revokedAt IS NULL`;
+- `expiresAt > now`.
+
+Somente a transacao que altera uma linha preenche `User.passwordHash`. Falha na
+ativacao causa rollback de `usedAt`. Datas entram como `Date` UTC na aplicacao e
+seguem o padrao `TIMESTAMP(3)` existente do Prisma/PostgreSQL.
+
+Desativacao atualiza `User.disabledAt`, exclui todas as AuthSession e revoga
+convite pendente na mesma transacao. Mudanca de role e desativacao de OWNER
+bloqueiam a linha de Organization antes da contagem de OWNERs ativos.
 
 ## Customer e Equipment na Fase 3
 
@@ -254,6 +298,8 @@ publico.
 erDiagram
   Organization ||--o{ User : has
   User ||--o{ AuthSession : has
+  Organization ||--o{ UserInvitation : has
+  User ||--o| UserInvitation : receives
   Organization ||--o{ Customer : has
   Organization ||--o{ Equipment : has
   Organization ||--o{ ServiceOrder : has
@@ -320,12 +366,28 @@ coluna `passwordHash` foi adicionada como obrigatoria sem default. Em bancos com
 usuarios existentes, essa migration exigiria um plano de preenchimento dos
 hashes antes de aplicar a constraint.
 
+## Migration de gestao de usuarios e convites
+
+A migration
+`20260727000000_add_user_management_invitations`:
+
+- torna `User.passwordHash` nullable para convites sem senha temporaria;
+- adiciona `User.disabledAt`;
+- adiciona indices por Organization, role e desativacao;
+- cria `UserInvitation`;
+- cria unique para `tokenHash`, `userId` e chaves compostas de tenant;
+- cria indices por Organization e expiracao;
+- adiciona constraints e foreign keys sem alterar migrations antigas.
+
+Usuarios existentes continuam ativos: seus hashes permanecem preenchidos e
+`disabledAt` nasce `NULL`.
+
 ## Riscos e decisoes futuras
 
-- Avaliar Row Level Security quando houver autenticacao e contexto de tenant.
+- Avaliar Row Level Security como segunda camada para o isolamento por tenant.
 - Definir politica de retencao e auditoria de alteracoes.
 - Avaliar se `User.email` deve continuar global ou migrar para um modelo de
   identidade + memberships.
-- Definir limpeza periodica de sessoes expiradas.
+- Definir limpeza periodica de sessoes e convites expirados.
 - Criar testes de integracao para constraints de tenant quando o banco estiver
   disponivel em CI.

@@ -19,6 +19,10 @@ const config: SecurityRuntimeConfig = {
         limit: 5,
         windowSeconds: 300
       },
+      ACCOUNT_SETUP_ATTEMPT: {
+        limit: 5,
+        windowSeconds: 300
+      },
       PUBLIC_PORTAL_LOOKUP: {
         limit: 60,
         windowSeconds: 60
@@ -59,6 +63,7 @@ describe("security audit service", () => {
         cookie: "cookie",
         token: "raw-session-token",
         tokenHash: "token-hash",
+        invitationToken: "raw-invitation-token",
         publicCode: "FF-ABCDEFG234",
         safeReason: "invalid_credentials"
       })
@@ -80,6 +85,7 @@ describe("security audit service", () => {
           reason: "invalid_credentials",
           password: "valid-password-123",
           token: "raw-session-token",
+          invitationToken: "raw-invitation-token",
           publicCode: "FF-ABCDEFG234"
         }
       },
@@ -100,6 +106,7 @@ describe("security audit service", () => {
     });
     expect(JSON.stringify(writtenInput)).not.toContain("valid-password-123");
     expect(JSON.stringify(writtenInput)).not.toContain("raw-session-token");
+    expect(JSON.stringify(writtenInput)).not.toContain("raw-invitation-token");
     expect(JSON.stringify(writtenInput)).not.toContain("FF-ABCDEFG234");
   });
 

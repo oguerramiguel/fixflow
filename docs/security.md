@@ -2,9 +2,9 @@
 
 ## Objetivo
 
-Este documento registra a base de seguranca da Fase 8.1 do FixFlow. O foco e
-preparar o MVP local para uma futura operacao em producao sem implementar novas
-funcionalidades comerciais.
+Este documento registra a base de seguranca da Fase 8.1 e os controles de
+usuarios, convites e sessoes da Fase 8.2A. O foco e preparar o MVP local para
+uma futura operacao em producao sem implementar funcionalidades comerciais.
 
 ## Controles ja existentes
 
@@ -44,6 +44,21 @@ funcionalidades comerciais.
   `publicCode` bruto.
 - Auditoria de eventos de seguranca em `SecurityAuditLog`.
 
+## Controles adicionados na Fase 8.2A
+
+- Gestao de usuarios exclusiva para OWNER e reautorizada server-side.
+- User com `disabledAt`; nao ha exclusao fisica.
+- `passwordHash` nullable apenas para conta convidada ainda nao configurada.
+- Token de convite aleatorio com 32 bytes; somente SHA-256 e persistido.
+- Convite de uso unico, revogavel e com validade de 72 horas.
+- Mensagem generica para token invalido, expirado, revogado ou utilizado.
+- Consumo atomico do convite e ativacao da conta na mesma transacao.
+- Rate limiting por origem na pagina e na action de setup de conta.
+- Desativacao e revogacao de todas as sessoes na mesma transacao.
+- Sessao revalida existencia e estado ativo do User e a Organization.
+- Lock da linha de Organization antes de remover um OWNER ativo.
+- Protecao contra alteracao da propria role e desativacao da propria conta.
+
 ## Modelo basico de ameacas
 
 Principais ameacas consideradas:
@@ -53,6 +68,11 @@ Principais ameacas consideradas:
 - roubo ou exposicao de cookie de sessao;
 - persistencia acidental de token bruto de sessao;
 - uso de `organizationId` vindo do browser para cruzar tenants;
+- uso de User ID de outra Organization em actions administrativas;
+- consumo repetido ou concorrente do mesmo convite;
+- persistencia ou log acidental do token bruto de convite;
+- manutencao de acesso por sessao depois da desativacao;
+- corrida que removeria o ultimo OWNER ativo;
 - tentativa de listar ou adivinhar `publicCode`;
 - aprovacao ou rejeicao publica repetida ou concorrente;
 - vazamento de dados pessoais no portal publico;
@@ -65,8 +85,11 @@ Principais ameacas consideradas:
 - A store em memoria de rate limit so protege uma instancia de processo.
 - O rate limit por origem depende de cabecalhos do runtime/proxy e nao substitui
   controles de borda em producao.
+- O token aparece necessariamente na URL de setup; proxies e plataformas devem
+  aplicar redaction dessa rota em access logs.
 - O projeto ainda nao possui WAF, CAPTCHA, IDS, monitoramento ou alertas.
-- Nao ha MFA, recuperacao de senha, verificacao de email ou convite de usuarios.
+- Nao ha MFA, recuperacao de senha, verificacao de email ou envio automatico
+  de convite.
 - Nao ha job automatico implementado para limpar sessoes expiradas, contadores
   antigos ou logs de auditoria antigos.
 - A CSP inicial permite `unsafe-inline` para compatibilidade com Next.js e
@@ -94,6 +117,9 @@ Principais ameacas consideradas:
 - Em producao, `FIXFLOW_RATE_LIMIT_STORE` deve ser `database`.
 - Em producao, limites e janelas de cada operacao de rate limit devem estar
   explicitamente configurados.
+- Setup de conta usa
+  `FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT` e
+  `FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS`.
 - Em producao, `FIXFLOW_SECURITY_AUDIT_ENABLED` deve ser `true` e
   `FIXFLOW_SECURITY_AUDIT_STORE` deve ser `database`.
 - Configuracao ausente ou insegura em producao deve falhar com erro claro na
@@ -104,6 +130,7 @@ Principais ameacas consideradas:
 Operacoes protegidas:
 
 - `LOGIN_ATTEMPT`;
+- `ACCOUNT_SETUP_ATTEMPT`;
 - `PUBLIC_PORTAL_LOOKUP`;
 - `PUBLIC_QUOTE_APPROVE`;
 - `PUBLIC_QUOTE_REJECT`.
@@ -138,6 +165,14 @@ Eventos registrados:
 - `LOGIN_REJECTED`;
 - `LOGOUT`;
 - `RATE_LIMIT_BLOCKED`;
+- `USER_INVITED`;
+- `USER_INVITATION_REVOKED`;
+- `USER_INVITATION_USED`;
+- `USER_ROLE_CHANGED`;
+- `USER_DISABLED`;
+- `USER_REACTIVATED`;
+- `USER_SESSIONS_REVOKED`;
+- `USER_ADMIN_OPERATION_REJECTED`;
 - `PUBLIC_QUOTE_APPROVED`;
 - `PUBLIC_QUOTE_REJECTED`.
 
@@ -156,6 +191,10 @@ Erros de escrita de auditoria nao devem impedir indevidamente operacoes
 legitimas. Eles sao reportados com `console.error` usando apenas tipo do evento,
 resultado e nome do erro.
 
+Eventos administrativos usam o `userId` do ator autenticado e hash do ID do
+User alvo. `USER_INVITATION_USED` usa o hash do token como `subjectHash`; o
+token bruto e a senha nunca entram nos metadados.
+
 ## Politica de logs
 
 Nunca registrar:
@@ -165,6 +204,7 @@ Nunca registrar:
 - cookie;
 - token de sessao;
 - `tokenHash`;
+- token bruto de convite ou link completo de setup;
 - `publicCode` bruto;
 - cabecalho Authorization;
 - conteudo completo de requisicoes;
@@ -220,6 +260,7 @@ Producao:
 - [ ] Rotina de limpeza de `RateLimitCounter` definida.
 - [ ] Retencao de `SecurityAuditLog` definida.
 - [ ] Logs revisados para ausencia de senha, token e `publicCode` bruto.
+- [ ] Access logs aplicam redaction a `/setup-account/[token]`.
 - [ ] Revisao de CSP apos qualquer novo asset externo.
 - [ ] Monitoramento e alertas planejados.
 
@@ -231,5 +272,6 @@ Producao:
 - Revisao de CSP com nonce se o projeto evoluir para uma politica mais estrita.
 - Analise separada de Row Level Security.
 - MFA e recuperacao de senha.
+- Envio de convite por email sem reintroduzir token em logs.
 - CI com migrations, testes e lint.
 - Testes E2E para login, logout e portal publico.

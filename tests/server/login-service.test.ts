@@ -16,7 +16,8 @@ const existingUser: AuthUserForLogin = {
   name: "Owner",
   email: "owner@example.com",
   passwordHash: "stored-password-hash",
-  role: UserRole.OWNER
+  role: UserRole.OWNER,
+  disabledAt: null
 };
 
 function createDependencies(
@@ -103,6 +104,47 @@ describe("login service", () => {
         dependencies
       )
     ).rejects.toThrow(INVALID_CREDENTIALS_MESSAGE);
+  });
+
+  it("rejects a disabled user before password verification or session creation", async () => {
+    const dependencies = createDependencies({
+      findUserByEmail: vi.fn(async () => ({
+        ...existingUser,
+        disabledAt: new Date("2026-07-27T12:00:00.000Z")
+      }))
+    });
+
+    await expect(
+      loginWithEmailAndPassword(
+        {
+          email: "owner@example.com",
+          password: "valid-password-123"
+        },
+        dependencies
+      )
+    ).rejects.toThrow(INVALID_CREDENTIALS_MESSAGE);
+    expect(dependencies.verifyPassword).not.toHaveBeenCalled();
+    expect(dependencies.createSession).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invited user who has not defined a password", async () => {
+    const dependencies = createDependencies({
+      findUserByEmail: vi.fn(async () => ({
+        ...existingUser,
+        passwordHash: null
+      }))
+    });
+
+    await expect(
+      loginWithEmailAndPassword(
+        {
+          email: "owner@example.com",
+          password: "valid-password-123"
+        },
+        dependencies
+      )
+    ).rejects.toThrow(INVALID_CREDENTIALS_MESSAGE);
+    expect(dependencies.createSession).not.toHaveBeenCalled();
   });
 
   it("does not return passwordHash in the login result", async () => {

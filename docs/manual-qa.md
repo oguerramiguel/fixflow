@@ -22,6 +22,40 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] Area interna redireciona para login quando nao autenticada.
 - [ ] Logout invalida a sessao e volta para o fluxo de login.
 - [ ] `GET /api/me` retorna usuario seguro, sem `passwordHash` ou `tokenHash`.
+- [ ] Usuario desativado recebe mensagem generica e nao consegue entrar.
+- [ ] Sessao criada antes da desativacao deixa de acessar `/app`.
+
+## Usuarios, convites e roles
+
+- [ ] OWNER acessa `/app/settings/users` e lista somente a propria Organization.
+- [ ] ADMIN e TECHNICIAN nao acessam a tela nem executam suas Server Actions.
+- [ ] Lista mostra nome, email, role amigavel, status e data de criacao.
+- [ ] OWNER cria convite com nome, email e role.
+- [ ] Link e exibido apenas no retorno da criacao.
+- [ ] Copiar link produz URL completa de `/setup-account/[token]`.
+- [ ] Recarregar a tela remove o token bruto da interface.
+- [ ] Compartilhar o link manualmente funciona; nenhum email e enviado.
+- [ ] Email duplicado retorna mensagem segura.
+- [ ] OWNER altera role de outro usuario permitido.
+- [ ] OWNER nao altera a propria role.
+- [ ] Ultimo OWNER ativo nao pode ser rebaixado.
+- [ ] OWNER nao desativa a propria conta.
+- [ ] Ultimo OWNER ativo nao pode ser desativado.
+- [ ] Desativar outro usuario pede confirmacao e revoga suas sessoes.
+- [ ] Reativar usuario restaura a possibilidade de login quando a senha existe.
+- [ ] Revogar sessoes pede confirmacao e invalida todas as sessoes existentes.
+- [ ] Convite pendente pode ser revogado.
+- [ ] Convite expirado ou revogado pode receber link novo; o anterior falha.
+
+## Configuracao de conta
+
+- [ ] Link valido abre formulario publico sem navegacao administrativa.
+- [ ] Senha curta, longa demais, truncavel ou divergente e recusada.
+- [ ] Senha valida conclui o convite e permite login.
+- [ ] O mesmo convite nao funciona uma segunda vez.
+- [ ] Convite expirado, revogado, utilizado ou invalido mostra a mesma mensagem.
+- [ ] Tentativas repetidas sao bloqueadas pelo rate limit.
+- [ ] Pagina nao exibe hash, IDs internos ou detalhes tecnicos.
 
 ## Customer
 
@@ -109,7 +143,9 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] HSTS aparece somente em ambiente de producao.
 - [ ] Auditoria registra login bem-sucedido, login recusado e logout.
 - [ ] Auditoria registra bloqueio por rate limit e decisao publica.
+- [ ] Auditoria registra convite, uso/revogacao, role, status e sessoes.
 - [ ] Auditoria nao contem senha, cookie, token de sessao ou `publicCode` bruto.
+- [ ] Auditoria e logs da aplicacao nao contem token bruto de convite.
 
 ## Validacoes automatizadas
 

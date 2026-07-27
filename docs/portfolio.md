@@ -17,6 +17,7 @@ O objetivo e demonstrar uma aplicacao web full-stack com:
 - regras de negocio fora dos componentes React;
 - autenticacao server-side;
 - sessao opaca persistida;
+- gestao de usuarios, convites e revogacao de sessoes;
 - isolamento logico por tenant;
 - modelagem relacional com Prisma;
 - calculos monetarios seguros para o escopo do MVP;
@@ -39,6 +40,9 @@ O objetivo e demonstrar uma aplicacao web full-stack com:
 - Valores monetarios usam `Prisma.Decimal`, nao JavaScript number.
 - Money DTO retorna string canonica com duas casas decimais.
 - Quote `DRAFT` nao aparece no portal publico.
+- Convite usa token aleatorio, persiste somente hash e e consumido atomicamente.
+- User desativado perde acesso mesmo que ainda possua cookie antigo.
+- O ultimo OWNER ativo e protegido por lock e validacao transacional.
 
 ## Desafios tecnicos
 
@@ -81,6 +85,15 @@ uma capability URL limitada a uma ServiceOrder. Ele nao permite listar recursos,
 nao usa `AuthenticatedContext` e nao expoe Customer, IDs internos ou
 `organizationId`.
 
+### Convites e ciclo de acesso
+
+OWNER cria User sem senha temporaria e recebe um link para compartilhar
+manualmente. O convidado define a propria senha. Token bruto nao vai ao banco ou
+auditoria; convite expira em 72 horas e so pode ser consumido uma vez.
+
+Desativacao e revogacao de AuthSession ocorrem juntas. A sessao tambem recarrega
+o User persistido, impedindo que cookie antigo mantenha acesso.
+
 ## O que o projeto demonstra
 
 - Capacidade de decompor um produto em fases incrementais.
@@ -104,7 +117,7 @@ nao usa `AuthenticatedContext` e nao expoe Customer, IDs internos ou
 - Por que Quote `DRAFT` nao aparece publicamente.
 - Por que dinheiro entra como string e vira Decimal no servidor.
 - Como as transacoes evitam status sem timeline ou timeline sem status.
-- Onde ainda faltam controles para producao, como rate limiting, CI e deploy.
+- Onde ainda faltam controles para producao, como controles de borda, CI e deploy.
 
 ## Screenshots reais sugeridos
 
@@ -113,6 +126,8 @@ localmente:
 
 - tela de login;
 - area interna de operacao com links principais;
+- gestao de usuarios e criacao de convite;
+- configuracao publica de conta;
 - listagem de clientes;
 - detalhes de um cliente com equipamentos;
 - listagem de equipamentos;
@@ -130,6 +145,7 @@ Nao use imagens falsas nem referencie arquivos que nao existem.
 - Sem deploy publico.
 - Sem CI/CD.
 - Sem e-mail, WhatsApp ou SMS real.
+- Convite compartilhado manualmente; sem recuperacao de senha.
 - Sem PDF.
 - Sem pagamento.
 - Sem dashboard funcional.

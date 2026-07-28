@@ -45,6 +45,18 @@ function createConfig(
           limit: 2,
           windowSeconds: 60
         },
+        [rateLimitOperations.passwordChangeAttempt]: {
+          limit: 2,
+          windowSeconds: 60
+        },
+        [rateLimitOperations.passwordResetCreate]: {
+          limit: 2,
+          windowSeconds: 60
+        },
+        [rateLimitOperations.passwordResetConsume]: {
+          limit: 2,
+          windowSeconds: 60
+        },
         [rateLimitOperations.publicPortalLookup]: {
           limit: 1,
           windowSeconds: 60
@@ -63,6 +75,19 @@ function createConfig(
     audit: {
       enabled: true,
       store: "database"
+    },
+    passwordReset: {
+      tokenTtlMinutes: 30
+    },
+    retention: {
+      expiredSessionDays: 7,
+      closedInvitationDays: 30,
+      closedPasswordResetDays: 30,
+      rateLimitCounterSeconds: 86400,
+      auditLogDays: 90
+    },
+    cleanup: {
+      batchSize: 500
     }
   };
 }
@@ -251,6 +276,29 @@ describe("rate limit service", () => {
     );
 
     expect(JSON.stringify(store.snapshot())).not.toContain(rawToken);
+  });
+
+  it.each([
+    rateLimitOperations.passwordChangeAttempt,
+    rateLimitOperations.passwordResetCreate,
+    rateLimitOperations.passwordResetConsume
+  ])("applies an independent deterministic policy for %s", async (operation) => {
+    const store = new InMemoryRateLimitStore();
+    const dependencies = createDependencies(store);
+    const subjectHash = hashSecurityValue(`subject-${operation}`);
+    const input = {
+      operation,
+      keyParts: [subjectHash],
+      subjectHash,
+      origin,
+      now: new Date("2026-07-14T12:00:00.000Z")
+    };
+
+    await enforceRateLimit(input, dependencies);
+    await enforceRateLimit(input, dependencies);
+    await expect(enforceRateLimit(input, dependencies)).rejects.toThrow(
+      RateLimitExceededError
+    );
   });
 
   it("keeps rate limit buckets isolated when organization id is part of the key", async () => {

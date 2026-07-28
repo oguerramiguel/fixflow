@@ -4,7 +4,8 @@
 
 A autenticacao atual cria uma fronteira server-side para usuarios internos do
 FixFlow. A Fase 2 implementou login e sessoes opacas. A Fase 8.2A adicionou
-gestao de usuarios, convites manuais, desativacao e revogacao de sessoes.
+gestao de usuarios, convites manuais, desativacao e revogacao de sessoes. A
+Fase 8.2B adiciona troca autenticada de senha e redefinicao assistida por OWNER.
 
 Esta implementacao nao e apresentada como recomendacao universal para todos os
 sistemas de producao. Ela e uma base explicita para demonstrar o fluxo de
@@ -176,6 +177,61 @@ O consumo usa update condicional por `tokenHash`, `usedAt`, `revokedAt` e
 transacao. Depois do sucesso, o usuario faz login normalmente; nao ha login
 automatico pelo link.
 
+Convites encerrados podem ser removidos pelo cleanup de retencao. Enquanto o
+User continuar convidado, um OWNER ainda pode reemitir o convite: o repository
+recria `UserInvitation` no mesmo tenant quando o registro antigo ja nao existe.
+
+## Alteracao autenticada da propria senha
+
+OWNER, ADMIN e TECHNICIAN autenticados acessam `/app/settings/account`. O
+formulario exige senha atual, nova senha e confirmacao. A nova senha passa pela
+mesma politica do cadastro, deve coincidir com a confirmacao e nao pode ser
+equivalente a senha atual.
+
+A Server Action resolve `AuthenticatedContext`, aplica rate limit usando hashes
+do tenant, User e origem, e nunca aceita `organizationId` do formulario. O
+service carrega a credencial ativa por `userId + organizationId`, verifica a
+senha atual com bcrypt e calcula o novo hash.
+
+A atualizacao condicional de `User.passwordHash` e a exclusao de todas as
+`AuthSession` do User ocorrem na mesma transacao. Isso inclui a sessao corrente;
+depois do commit, a action tambem expira o cookie local e orienta um novo login.
+Falhas de senha atual ou estado concorrente usam resposta generica e nao
+revelam hash ou detalhe de conta.
+
+## Redefinicao assistida por OWNER
+
+Nao existe solicitacao autonoma por email. Um OWNER autenticado seleciona um
+User ativo da propria Organization em `/app/settings/users` e gera um link
+manual. Contas convidadas, desativadas, inexistentes ou de outro tenant nao
+recebem token.
+
+O token:
+
+- possui 32 bytes aleatorios codificados em Base64URL;
+- aparece somente na resposta da criacao;
+- e armazenado apenas como SHA-256 em `PasswordResetToken.tokenHash`;
+- expira conforme `FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES`, com padrao local
+  de 30 minutos;
+- pode ser revogado pelo OWNER;
+- funciona uma unica vez.
+
+A criacao bloqueia a linha do User dentro da transacao, revalida tenant e
+estado ativo, revoga tokens pendentes anteriores e cria o novo registro. A
+constraint parcial do PostgreSQL impede mais de um token pendente por
+`organizationId + userId`.
+
+O destinatario abre `/reset-password/[token]`, sem `AuthenticatedContext`, e
+informa a nova senha. Token invalido, expirado, usado, revogado ou associado a
+conta indisponivel produz a mesma resposta. O consumo faz claim condicional do
+token; somente a transacao que altera uma linha pode atualizar a senha. O mesmo
+commit revoga todas as sessoes e qualquer outro token pendente do User. Nao ha
+login automatico.
+
+Criacao, revogacao, conclusao, rejeicoes e bloqueios de rate limit sao
+auditados com hashes minimizados. Token bruto, link completo e senha nunca
+entram na auditoria.
+
 ## Bootstrap de desenvolvimento
 
 O comando `npm run db:seed` usa variaveis `FIXFLOW_BOOTSTRAP_*` para criar ou
@@ -247,6 +303,10 @@ sequenceDiagram
 - eventos de login e logout nao devem registrar secrets;
 - token bruto de convite nao deve ser persistido, logado ou auditado;
 - consumo concorrente do convite nao deve ativar duas vezes;
+- token bruto de redefinicao nao deve ser persistido, logado ou auditado;
+- criacao de redefinicao deve ser OWNER-only e tenant-aware;
+- consumo concorrente de redefinicao deve produzir um unico vencedor;
+- troca e redefinicao de senha devem revogar todas as sessoes do User;
 - User desativado nao deve autenticar nem conservar acesso por sessao antiga;
 - `organizationId` e role nao devem vir do cliente;
 - `/app` e `/api/me` devem resolver autenticacao no servidor;
@@ -254,15 +314,15 @@ sequenceDiagram
 
 ## Limitacoes atuais
 
-- nao ha recuperacao ou redefinicao de senha;
+- a recuperacao e assistida por OWNER e nao possui solicitacao autonoma;
+- um OWNER bloqueado precisa de outro OWNER ativo para receber o link; nao ha
+  recuperacao self-service ou fluxo operacional para o unico OWNER;
 - nao ha verificacao de email;
 - nao ha MFA;
 - nao ha sliding expiration;
-- nao ha job periodico para limpeza de sessoes expiradas;
-- nao ha job periodico para limpeza de contadores antigos de rate limit;
-- nao ha politica formal de retencao de auditoria;
+- o cleanup de retencao e manual; nao ha scheduler embutido;
 - nao ha suporte a usuario em multiplas Organizations.
-- nao ha envio automatico de convite;
+- nao ha envio automatico de convite ou redefinicao;
 
 Esses pontos sao riscos ou evolucoes futuras, nao funcionalidades simuladas na
 versao atual.

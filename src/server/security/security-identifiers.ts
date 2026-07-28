@@ -4,6 +4,10 @@ import {
   hashAccountSetupToken,
   isAccountSetupTokenFormatValid
 } from "@/server/auth/account-setup-token";
+import {
+  hashPasswordResetToken,
+  isPasswordResetTokenFormatValid
+} from "@/server/auth/password-reset-token";
 import { hashSecurityValue } from "@/server/security/security-hash";
 
 export type SecuritySubject = {
@@ -36,5 +40,15 @@ export function createAccountSetupSecuritySubject(
     subjectHash: isAccountSetupTokenFormatValid(tokenInput)
       ? hashAccountSetupToken(tokenInput)
       : hashSecurityValue("invalid-account-setup-token")
+  };
+}
+
+export function createPasswordResetSecuritySubject(
+  tokenInput: string
+): SecuritySubject {
+  return {
+    subjectHash: isPasswordResetTokenFormatValid(tokenInput)
+      ? hashPasswordResetToken(tokenInput)
+      : hashSecurityValue("invalid-password-reset-token")
   };
 }

@@ -312,6 +312,45 @@ describe("user management repository", () => {
     expect(mocks.userInvitation.updateMany).not.toHaveBeenCalled();
   });
 
+  it("recreates a setup link after retention removed the closed invitation", async () => {
+    const invitedUserWithoutInvitation = {
+      ...pendingUser,
+      invitation: null
+    };
+    const recreatedUser = {
+      ...pendingUser,
+      invitation: {
+        ...pendingUser.invitation,
+        expiresAt
+      }
+    };
+    mocks.user.findFirst
+      .mockResolvedValueOnce(invitedUserWithoutInvitation)
+      .mockResolvedValueOnce(recreatedUser);
+
+    const result = await replaceOrganizationUserInvitation(
+      context,
+      "user-2",
+      {
+        tokenHash: "replacement-token-hash",
+        expiresAt,
+        now
+      }
+    );
+
+    expect(mocks.userInvitation.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: "org-1",
+        userId: "user-2",
+        tokenHash: "replacement-token-hash",
+        expiresAt
+      }
+    });
+    expect(result).toMatchObject({
+      outcome: "updated"
+    });
+  });
+
   it("replaces an expired setup link with a tenant-scoped conditional update", async () => {
     const expiredUser = {
       ...pendingUser,

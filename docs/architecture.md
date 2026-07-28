@@ -16,7 +16,7 @@ dados sem criar abstracoes prematuras.
 - `src/domain/services`: regras de negocio puras e testaveis.
 - `src/domain/errors`: erros de dominio.
 - `src/server/auth`: hashing de senha, login, sessao, cookie, contexto
-  autenticado, autorizacao por role e token de setup de conta.
+  autenticado, autorizacao por role e tokens de setup/redefinicao.
 - `src/server/db`: Prisma Client centralizado.
 - `src/server/repositories`: contexto, repositories de autenticacao e
   repositories de acesso a dados futuros.
@@ -29,6 +29,13 @@ Na Fase 8.2A, `src/server/services/user-management-service.ts` coordena casos
 de uso OWNER-only e `account-setup-service.ts` coordena o consumo publico do
 convite. O acesso a User, UserInvitation e revogacao administrativa de
 AuthSession fica em `user-management-repository.ts`.
+
+Na Fase 8.2B, `password-service.ts` coordena a troca autenticada,
+`password-reset-service.ts` coordena criacao/revogacao OWNER-only e consumo
+publico, e `security-cleanup-service.ts` calcula retencoes e executa lotes. O
+acesso transacional a User, AuthSession e PasswordResetToken fica em
+`password-repository.ts`; o cleanup SQL fica isolado em
+`security-cleanup-repository.ts`.
 
 ## Fluxo conceitual de uma requisicao
 
@@ -125,6 +132,31 @@ sequenceDiagram
   Setup->>Service: token bruto + senha
   Service->>Repo: tokenHash + passwordHash
   Repo->>DB: claim condicional + ativacao atomica
+```
+
+Fluxo de redefinicao assistida da Fase 8.2B:
+
+```mermaid
+sequenceDiagram
+  actor Owner as OWNER
+  participant UI as /app/settings/users
+  participant Service as Password reset service
+  participant Repo as Password repository
+  participant DB as PostgreSQL
+  actor User
+  participant Reset as /reset-password/[token]
+
+  Owner->>UI: gerar link para User ativo
+  UI->>Service: contexto autenticado + targetUserId
+  Service->>Repo: tokenHash + expiresAt
+  Repo->>DB: lock User, revoga pendentes, cria token
+  Service-->>Owner: link bruto exibido uma vez
+  Owner-->>User: compartilhamento manual
+  User->>Reset: nova senha
+  Reset->>Service: token bruto + senha
+  Service->>Repo: claim condicional + passwordHash
+  Repo->>DB: token usado + senha + sessoes revogadas
+  Reset-->>User: novo login necessario
 ```
 
 Fluxo de uma operacao autenticada futura:
@@ -360,6 +392,11 @@ concretos e foram ampliados na Fase 4:
 - `user-management-repository`: listagem tenant-aware de User, convite,
   alteracao de role, desativacao, reativacao, revogacao de sessoes e consumo
   atomico de UserInvitation.
+- `password-repository`: troca de senha tenant-aware, criacao/revogacao
+  OWNER-assisted e consumo atomico de PasswordResetToken com revogacao de
+  AuthSession.
+- `security-cleanup-repository`: contagem e delete paginado somente das tabelas
+  de seguranca elegiveis por retencao.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
@@ -540,7 +577,11 @@ foi implementado nesta fase para manter o escopo controlado.
 - `User.passwordHash = null` representa conta convidada ainda nao configurada.
 - `UserInvitation` guarda somente hash SHA-256, expira em 72 horas e e de uso
   unico.
+- `PasswordResetToken` guarda somente SHA-256, possui TTL configuravel, uso
+  unico e no maximo um token pendente por User e Organization.
 - Revogacao de todas as sessoes usa exclusao server-side de AuthSession.
+- Troca e redefinicao de senha atualizam o hash e revogam sessoes no mesmo
+  commit.
 - `ServiceOrder.publicCode` e unico e nao deve ser sequencial.
 - `publicCode` funciona como link publico de acompanhamento, nao como
   autenticacao administrativa.
@@ -558,15 +599,17 @@ foi implementado nesta fase para manter o escopo controlado.
   testes. Producao deve usar PostgreSQL/Prisma.
 - Auditoria de seguranca registra eventos minimizados e nao bloqueia operacoes
   legitimas quando a escrita de log falha.
+- Cleanup de seguranca e um comando manual, paginado, idempotente e com dry-run;
+  seu agendamento pertence ao ambiente operacional.
 
 ## Evolucoes futuras
 
-- envio de convite por email e recuperacao de senha;
+- envio de convite ou redefinicao por email e recuperacao autonoma;
 - MFA e verificacao de email;
 - repositories para novos casos de uso reais;
-- politica de retencao e observabilidade de auditoria;
+- agendamento do cleanup e observabilidade de auditoria;
 - controle de permissoes por papel;
 - Row Level Security;
 - melhorias do portal publico e envio externo do link;
 - observabilidade de seguranca e alertas;
-- testes de integracao com banco.
+- CI com execucao dos testes de integracao em PostgreSQL separado.

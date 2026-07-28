@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
-import { prisma } from "@/server/db/prisma";
+import { prisma } from "../db/prisma";
 import type {
   SecurityAuditEventType,
   SecurityAuditOutcome
-} from "@/server/security/security-audit-types";
+} from "./security-audit-types";
 
 export type CreateSecurityAuditLogRecordInput = {
   eventType: SecurityAuditEventType;

@@ -66,6 +66,12 @@ export default async function ProtectedAppLayout({
             >
               Ordens de servico
             </Link>
+            <Link
+              href="/app/settings/account"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            >
+              Minha conta
+            </Link>
             {currentUser.role === "OWNER" ? (
               <Link
                 href="/app/settings/users"

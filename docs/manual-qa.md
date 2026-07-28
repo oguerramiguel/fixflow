@@ -25,6 +25,17 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] Usuario desativado recebe mensagem generica e nao consegue entrar.
 - [ ] Sessao criada antes da desativacao deixa de acessar `/app`.
 
+## Alteracao da propria senha
+
+- [ ] OWNER, ADMIN e TECHNICIAN acessam `/app/settings/account`.
+- [ ] Senha atual incorreta retorna mensagem segura.
+- [ ] Nova senha curta, longa demais, truncavel ou com confirmacao divergente e recusada.
+- [ ] Nova senha equivalente a atual e recusada.
+- [ ] Alteracao valida revoga todas as sessoes, inclusive a corrente.
+- [ ] Cookie local expira e o usuario precisa entrar com a nova senha.
+- [ ] Senha anterior deixa de autenticar.
+- [ ] Tentativas repetidas sao bloqueadas por rate limit.
+
 ## Usuarios, convites e roles
 
 - [ ] OWNER acessa `/app/settings/users` e lista somente a propria Organization.
@@ -46,6 +57,24 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] Revogar sessoes pede confirmacao e invalida todas as sessoes existentes.
 - [ ] Convite pendente pode ser revogado.
 - [ ] Convite expirado ou revogado pode receber link novo; o anterior falha.
+- [ ] Apos cleanup remover um convite encerrado, o User convidado recebe novo link.
+- [ ] Somente OWNER ve e executa geracao/revogacao de link de redefinicao.
+- [ ] Link de redefinicao so pode ser criado para User ativo da mesma Organization.
+
+## Redefinicao assistida de senha
+
+- [ ] OWNER gera link para User ativo e o link aparece apenas na resposta.
+- [ ] Gerar novo link invalida qualquer link pendente anterior.
+- [ ] OWNER revoga o link pendente e o consumo passa a falhar.
+- [ ] `/reset-password/[token]` abre sem navegacao administrativa.
+- [ ] Token invalido, expirado, usado, revogado ou de conta indisponivel mostra
+      a mesma mensagem.
+- [ ] Nova senha valida conclui a redefinicao sem login automatico.
+- [ ] O mesmo token nao funciona uma segunda vez.
+- [ ] Todas as sessoes do User alvo deixam de autorizar.
+- [ ] Duas submissoes concorrentes produzem apenas um sucesso.
+- [ ] Tentativas repetidas de criacao e consumo sao bloqueadas por rate limit.
+- [ ] UI, logs e auditoria nao exibem `tokenHash`, senha ou link depois da resposta.
 
 ## Configuracao de conta
 
@@ -144,17 +173,35 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] Auditoria registra login bem-sucedido, login recusado e logout.
 - [ ] Auditoria registra bloqueio por rate limit e decisao publica.
 - [ ] Auditoria registra convite, uso/revogacao, role, status e sessoes.
+- [ ] Auditoria registra troca, criacao/revogacao/conclusao de redefinicao e cleanup.
 - [ ] Auditoria nao contem senha, cookie, token de sessao ou `publicCode` bruto.
 - [ ] Auditoria e logs da aplicacao nao contem token bruto de convite.
+- [ ] Auditoria e logs da aplicacao nao contem token bruto de redefinicao.
+- [ ] Access logs ocultam tokens em `/setup-account/[token]` e
+      `/reset-password/[token]`.
+
+## Retencao e cleanup
+
+- [ ] `npm run security:cleanup -- --dry-run` retorna contagens e nao remove linhas.
+- [ ] Execucao real remove apenas registros alem das retencoes configuradas.
+- [ ] Lotes respeitam `FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE`.
+- [ ] Segunda execucao sem novos elegiveis retorna zero.
+- [ ] Sessoes ainda validas e tokens ainda pendentes nao sao removidos.
+- [ ] User, Organization, Customer, Equipment, ServiceOrder, Diagnostic e Quote
+      permanecem intactos.
+- [ ] Convite encerrado removido pode ser reemitido para User ainda convidado.
 
 ## Validacoes automatizadas
 
 - [ ] `npm run test`
+- [ ] `npm run test:postgres` com `FIXFLOW_TEST_DATABASE_URL` separado, quando disponivel
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run build`
 - [ ] `npm run prisma:validate`
 - [ ] `npm run prisma:format`
+- [ ] `npx prisma generate`
+- [ ] `git diff --check`
 
 ## Revisao final
 

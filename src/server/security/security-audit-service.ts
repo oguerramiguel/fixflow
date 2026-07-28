@@ -2,12 +2,12 @@ import type { Prisma } from "@prisma/client";
 import {
   createSecurityAuditLogRecord,
   type CreateSecurityAuditLogRecordInput
-} from "@/server/security/security-audit-repository";
+} from "./security-audit-repository";
 import type {
   SecurityAuditEventType,
   SecurityAuditOutcome
-} from "@/server/security/security-audit-types";
-import { getSecurityRuntimeConfig } from "@/server/security/security-env";
+} from "./security-audit-types";
+import { getSecurityRuntimeConfig } from "./security-env";
 
 export type SecurityAuditMetadataValue = string | number | boolean | null;
 export type SecurityAuditMetadata = Record<

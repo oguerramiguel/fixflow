@@ -17,6 +17,11 @@ import {
   getSecurityRequestOrigin,
   type SecurityRequestOrigin
 } from "@/server/security/request-origin";
+import { enforceRateLimit } from "@/server/security/rate-limit-service";
+import {
+  RateLimitExceededError,
+  rateLimitOperations
+} from "@/server/security/rate-limit-types";
 import { recordSecurityAuditEvent } from "@/server/security/security-audit-service";
 import {
   securityAuditEventTypes,
@@ -34,6 +39,10 @@ import {
   revokeUserInvitation,
   type UserManagementOperationResult
 } from "@/server/services/user-management-service";
+import {
+  createPasswordResetLink,
+  revokePasswordResetLinks
+} from "@/server/services/password-reset-service";
 
 export type InviteUserFormValues = {
   name: string;
@@ -47,6 +56,7 @@ export type UserManagementActionState = {
   fieldErrors?: Partial<Record<UserManagementField, string>>;
   values?: InviteUserFormValues;
   setupPath?: string;
+  passwordResetPath?: string;
   expiresAt?: string;
 };
 
@@ -57,7 +67,9 @@ type UserManagementOperation =
   | "change_role"
   | "disable_user"
   | "reactivate_user"
-  | "revoke_sessions";
+  | "revoke_sessions"
+  | "create_password_reset"
+  | "revoke_password_reset";
 
 type ActionSecurityContext = {
   context: AuthenticatedContext;
@@ -149,6 +161,7 @@ async function handleUserManagementError(
   }
 
   if (
+    error instanceof RateLimitExceededError ||
     error instanceof AuthorizationError ||
     error instanceof ConflictError ||
     error instanceof NotFoundError ||
@@ -161,6 +174,24 @@ async function handleUserManagementError(
   }
 
   throw error;
+}
+
+async function enforcePasswordResetAdminRateLimit(
+  security: ActionSecurityContext,
+  targetUserId: string
+): Promise<void> {
+  const targetSubjectHash = hashSecurityValue(targetUserId);
+
+  await enforceRateLimit({
+    operation: rateLimitOperations.passwordResetCreate,
+    keyParts: [
+      hashSecurityValue(security.context.organizationId),
+      hashSecurityValue(security.context.userId),
+      targetSubjectHash
+    ],
+    subjectHash: targetSubjectHash,
+    origin: security.origin
+  });
 }
 
 function revalidateUsersPage(): void {
@@ -450,6 +481,96 @@ export async function reissueInvitationAction(
       error,
       security,
       "reissue_invitation",
+      userId
+    );
+  }
+}
+
+export async function createPasswordResetLinkAction(
+  userId: string,
+  _previousState: UserManagementActionState,
+  _formData: FormData
+): Promise<UserManagementActionState> {
+  let security: ActionSecurityContext | null = null;
+
+  try {
+    security = await getActionSecurityContext();
+    await enforcePasswordResetAdminRateLimit(security, userId);
+    const result = await createPasswordResetLink(security.context, userId);
+
+    await recordUserManagementAudit(security, {
+      eventType: securityAuditEventTypes.passwordResetCreated,
+      targetUserId: result.userId,
+      metadata: {
+        resetExpiresAt: result.expiresAt.toISOString()
+      }
+    });
+
+    if (result.revokedTokenCount > 0) {
+      await recordUserManagementAudit(security, {
+        eventType: securityAuditEventTypes.passwordResetTokenRevoked,
+        targetUserId: result.userId,
+        metadata: {
+          reason: "replaced",
+          revokedCount: result.revokedTokenCount
+        }
+      });
+    }
+
+    revalidateUsersPage();
+
+    return {
+      success:
+        "Link de redefinicao criado. Copie-o agora; ele nao sera exibido novamente.",
+      passwordResetPath: result.resetPath,
+      expiresAt: result.expiresAt.toISOString()
+    };
+  } catch (error) {
+    return handleUserManagementError(
+      error,
+      security,
+      "create_password_reset",
+      userId
+    );
+  }
+}
+
+export async function revokePasswordResetLinksAction(
+  userId: string,
+  _previousState: UserManagementActionState,
+  _formData: FormData
+): Promise<UserManagementActionState> {
+  let security: ActionSecurityContext | null = null;
+
+  try {
+    security = await getActionSecurityContext();
+    await enforcePasswordResetAdminRateLimit(security, userId);
+    const result = await revokePasswordResetLinks(security.context, userId);
+
+    if (result.revokedTokenCount > 0) {
+      await recordUserManagementAudit(security, {
+        eventType: securityAuditEventTypes.passwordResetTokenRevoked,
+        targetUserId: result.userId,
+        metadata: {
+          reason: "owner_requested",
+          revokedCount: result.revokedTokenCount
+        }
+      });
+    }
+
+    revalidateUsersPage();
+
+    return {
+      success:
+        result.revokedTokenCount > 0
+          ? "Link de redefinicao revogado."
+          : "Nao havia link de redefinicao pendente."
+    };
+  } catch (error) {
+    return handleUserManagementError(
+      error,
+      security,
+      "revoke_password_reset",
       userId
     );
   }

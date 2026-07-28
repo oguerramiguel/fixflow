@@ -10,6 +10,7 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
 - Organization: representa a assistencia tecnica e o tenant.
 - User: usuario interno da Organization.
 - UserInvitation: convite de configuracao de conta para um User.
+- PasswordResetToken: capability temporaria para redefinicao assistida da senha.
 - AuthSession: sessao opaca persistida para um User autenticado.
 - Customer: cliente da assistencia.
 - Equipment: equipamento vinculado a um cliente.
@@ -27,6 +28,7 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
   orcamentos, itens de orcamento e timeline.
 - User possui varias AuthSession.
 - User possui no maximo uma UserInvitation corrente.
+- User pode ser alvo ou criador de varios PasswordResetToken historicos.
 - Customer possui Equipment e ServiceOrder.
 - Equipment pertence a Customer e pode aparecer em varias ServiceOrder.
 - ServiceOrder possui no maximo um Diagnostic, no maximo um Quote e varios
@@ -52,6 +54,11 @@ O FixFlow usa PostgreSQL com Prisma ORM. O schema inicial esta em
   existe apenas na criacao/reemissao e durante o acesso ao link.
 - `UserInvitation` usa `expiresAt`, `usedAt` e `revokedAt`; o banco impede que
   uso e revogacao coexistam no mesmo registro.
+- `PasswordResetToken` pertence a uma Organization, ao User alvo e ao OWNER
+  criador por chaves compostas com `organizationId`.
+- `PasswordResetToken.tokenHash` guarda SHA-256 do token bruto e usa
+  `expiresAt`, `usedAt` e `revokedAt`; uma check constraint impede uso e
+  revogacao simultaneos.
 - `AuthSession` nao possui `organizationId`. Ela pertence ao User, e a
   Organization confiavel e resolvida a partir do User persistido.
 - `AuthSession.tokenHash` armazena o hash SHA-256 deterministico do token bruto.
@@ -83,7 +90,9 @@ Indices iniciais priorizam:
 - sessoes por User;
 - usuarios por Organization, role e estado de desativacao;
 - convites por tokenHash, Organization e expiracao;
-- limpeza futura de sessoes por `expiresAt`.
+- tokens de redefinicao por tokenHash, Organization, User e timestamps
+  terminais;
+- limpeza de sessoes, convites, tokens, contadores e auditoria por tempo.
 
 `AuthSession.tokenHash` usa constraint `unique`, que ja cria indice para busca
 por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
@@ -95,6 +104,9 @@ por tokenHash. Por isso nao ha indice duplicado para o mesmo campo.
 - `AuthSession.tokenHash` e unico globalmente.
 - `UserInvitation.tokenHash` e unico globalmente.
 - `UserInvitation.userId` e unico; existe um convite corrente por User.
+- `PasswordResetToken.tokenHash` e unico globalmente.
+- Um indice unique parcial permite no maximo um PasswordResetToken pendente por
+  `[organizationId, userId]`.
 - `ServiceOrder.publicCode` e unico globalmente.
 - `Diagnostic` e unico por `[serviceOrderId, organizationId]`.
 - `Quote` e unico por `[serviceOrderId, organizationId]`.
@@ -144,6 +156,37 @@ seguem o padrao `TIMESTAMP(3)` existente do Prisma/PostgreSQL.
 Desativacao atualiza `User.disabledAt`, exclui todas as AuthSession e revoga
 convite pendente na mesma transacao. Mudanca de role e desativacao de OWNER
 bloqueiam a linha de Organization antes da contagem de OWNERs ativos.
+
+## PasswordResetToken e senha na Fase 8.2B
+
+`PasswordResetToken` usa relacoes compostas tanto para o alvo quanto para o
+criador:
+
+- `[userId, organizationId] -> User[id, organizationId]`;
+- `[createdByUserId, organizationId] -> User[id, organizationId]`.
+
+As duas foreign keys usam `ON DELETE RESTRICT`; um token nunca pode relacionar
+Users de Organizations diferentes. A criacao bloqueia o User alvo, exige conta
+ativa com senha, revoga pendentes anteriores e cria somente o hash do novo
+token.
+
+O consumo concorrente executa update condicional por `tokenHash`, estado
+pendente e `expiresAt > now`. Apenas quem altera uma linha atualiza
+`User.passwordHash`, remove todas as `AuthSession` do alvo e revoga outros
+tokens pendentes na mesma transacao. A troca autenticada da propria senha tambem
+atualiza o hash e remove sessoes atomicamente.
+
+## Retencao de dados de seguranca
+
+O cleanup usa limites de tempo calculados pela aplicacao e CTEs PostgreSQL em
+lotes com `FOR UPDATE SKIP LOCKED`. Somente registros elegiveis de
+`AuthSession`, `UserInvitation`, `PasswordResetToken`, `RateLimitCounter` e
+`SecurityAuditLog` sao removidos. `Organization`, `User` e todas as entidades
+de negocio ficam fora das queries de delete.
+
+Convites usados, revogados ou expirados podem ser removidos depois da retencao.
+Se o User ainda estiver no estado convidado, uma reemissao cria uma nova
+`UserInvitation`; portanto, a limpeza nao torna a conta irrecuperavel.
 
 ## Customer e Equipment na Fase 3
 
@@ -382,12 +425,26 @@ A migration
 Usuarios existentes continuam ativos: seus hashes permanecem preenchidos e
 `disabledAt` nasce `NULL`.
 
+## Migration de recuperacao e retencao
+
+A migration
+`20260728000000_add_password_recovery_security_maintenance`:
+
+- cria `PasswordResetToken` com hash unico, timestamps de estado e check
+  constraint;
+- cria foreign keys compostas tenant-aware para alvo e criador;
+- cria indice unique parcial para um unico token pendente por User/Organization;
+- cria indices de expiracao, uso e revogacao para cleanup;
+- adiciona indices de `usedAt` e `revokedAt` em `UserInvitation`.
+
+A migration e aditiva e nao altera senhas, sessoes ou dados de negocio
+existentes.
+
 ## Riscos e decisoes futuras
 
 - Avaliar Row Level Security como segunda camada para o isolamento por tenant.
-- Definir politica de retencao e auditoria de alteracoes.
+- Revisar periodos de retencao conforme privacidade e operacao de cada ambiente.
 - Avaliar se `User.email` deve continuar global ou migrar para um modelo de
   identidade + memberships.
-- Definir limpeza periodica de sessoes e convites expirados.
-- Criar testes de integracao para constraints de tenant quando o banco estiver
-  disponivel em CI.
+- Agendar externamente o cleanup manual existente.
+- Executar os testes de integracao PostgreSQL em banco separado na CI.

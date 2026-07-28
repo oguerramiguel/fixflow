@@ -18,6 +18,8 @@ O objetivo e demonstrar uma aplicacao web full-stack com:
 - autenticacao server-side;
 - sessao opaca persistida;
 - gestao de usuarios, convites e revogacao de sessoes;
+- troca de senha e redefinicao assistida com tokens de uso unico;
+- retencao manual de dados de seguranca com dry-run;
 - isolamento logico por tenant;
 - modelagem relacional com Prisma;
 - calculos monetarios seguros para o escopo do MVP;
@@ -43,6 +45,8 @@ O objetivo e demonstrar uma aplicacao web full-stack com:
 - Convite usa token aleatorio, persiste somente hash e e consumido atomicamente.
 - User desativado perde acesso mesmo que ainda possua cookie antigo.
 - O ultimo OWNER ativo e protegido por lock e validacao transacional.
+- Troca e redefinicao de senha revogam todas as sessoes atomicamente.
+- Token de redefinicao bruto aparece uma vez; somente SHA-256 vai ao banco.
 
 ## Desafios tecnicos
 
@@ -94,6 +98,16 @@ auditoria; convite expira em 72 horas e so pode ser consumido uma vez.
 Desativacao e revogacao de AuthSession ocorrem juntas. A sessao tambem recarrega
 o User persistido, impedindo que cookie antigo mantenha acesso.
 
+### Ciclo de senha e retencao
+
+Usuario autenticado pode trocar a propria senha confirmando a atual. Um OWNER
+pode gerar um link manual de redefinicao para conta ativa do mesmo tenant. O
+token e revogavel, expira, tem consumo atomico e invalida todas as sessoes.
+Nao existe email automatico nem recuperacao autonoma.
+
+Um comando operacional com dry-run remove dados de seguranca antigos em lotes,
+sem tocar nas entidades de negocio. O agendamento fica a cargo do ambiente.
+
 ## O que o projeto demonstra
 
 - Capacidade de decompor um produto em fases incrementais.
@@ -128,6 +142,8 @@ localmente:
 - area interna de operacao com links principais;
 - gestao de usuarios e criacao de convite;
 - configuracao publica de conta;
+- alteracao da propria senha;
+- redefinicao publica de senha por link assistido;
 - listagem de clientes;
 - detalhes de um cliente com equipamentos;
 - listagem de equipamentos;
@@ -145,7 +161,9 @@ Nao use imagens falsas nem referencie arquivos que nao existem.
 - Sem deploy publico.
 - Sem CI/CD.
 - Sem e-mail, WhatsApp ou SMS real.
-- Convite compartilhado manualmente; sem recuperacao de senha.
+- Convites e redefinicoes sao compartilhados manualmente; sem recuperacao
+  autonoma por email.
+- Cleanup de seguranca manual, sem scheduler embutido.
 - Sem PDF.
 - Sem pagamento.
 - Sem dashboard funcional.

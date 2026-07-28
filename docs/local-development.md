@@ -58,6 +58,12 @@ FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_WINDOW_SECONDS="900"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
@@ -66,6 +72,13 @@ FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_WINDOW_SECONDS="300"
 FIXFLOW_SECURITY_AUDIT_ENABLED="true"
 FIXFLOW_SECURITY_AUDIT_STORE="database"
+FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES="30"
+FIXFLOW_SECURITY_RETENTION_EXPIRED_SESSION_DAYS="7"
+FIXFLOW_SECURITY_RETENTION_CLOSED_INVITATION_DAYS="30"
+FIXFLOW_SECURITY_RETENTION_CLOSED_PASSWORD_RESET_DAYS="30"
+FIXFLOW_SECURITY_RETENTION_RATE_LIMIT_COUNTER_SECONDS="86400"
+FIXFLOW_SECURITY_RETENTION_AUDIT_LOG_DAYS="90"
+FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE="500"
 ```
 
 A store `memory` de rate limit e previsivel para desenvolvimento e testes, mas
@@ -152,9 +165,10 @@ npm run prisma:format
 
 Nao use `db push` como substituto das migrations neste projeto.
 
-A Fase 8.2A adiciona
-`20260727000000_add_user_management_invitations`. Para aplicar apenas migrations
-pendentes em ambiente controlado:
+As Fases 8.2A e 8.2B adicionam
+`20260727000000_add_user_management_invitations` e
+`20260728000000_add_password_recovery_security_maintenance`. Para aplicar
+apenas migrations pendentes em ambiente controlado:
 
 ```powershell
 npx.cmd prisma migrate deploy
@@ -177,6 +191,67 @@ Depois do login como OWNER:
 O processo e manual nesta fase. Nao ha SMTP, envio de email nem senha
 temporaria. O link expira em 72 horas e o token bruto desaparece ao recarregar
 a tela administrativa.
+
+## Senha e redefinicao local
+
+Um usuario autenticado altera a propria senha em:
+
+```text
+http://localhost:3000/app/settings/account
+```
+
+A operacao revoga todas as sessoes, inclusive a atual. Para uma conta ativa que
+nao sabe a senha, o OWNER gera um link em `/app/settings/users`, copia a resposta
+uma unica vez e compartilha manualmente. O destinatario usa
+`/reset-password/[token]`. O TTL local padrao e 30 minutos e nao existe envio de
+email. Um OWNER sem acesso depende de outro OWNER ativo; a recuperacao do unico
+OWNER nao e automatizada nesta fase.
+
+## Cleanup de seguranca
+
+Revise primeiro as contagens sem excluir:
+
+```powershell
+npm.cmd run security:cleanup -- --dry-run
+```
+
+Execute a remocao somente depois de conferir o banco e as retencoes do `.env`:
+
+```powershell
+npm.cmd run security:cleanup
+```
+
+O comando real remove somente sessoes expiradas, convites/tokens encerrados,
+contadores antigos e auditoria antiga, em lotes. Ele nao apaga User,
+Organization nem entidades operacionais. Nao ha scheduler embutido.
+
+## Testes opcionais com PostgreSQL real
+
+Os testes de integracao sao destrutivos e exigem um banco separado cujo nome
+contenha `test`. A URL nao pode ser igual a `DATABASE_URL`.
+
+Em um PowerShell dedicado:
+
+```powershell
+$testDatabaseUrl = "postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_test?schema=public"
+$developmentDatabaseUrl = $env:DATABASE_URL
+$env:FIXFLOW_TEST_DATABASE_URL = $testDatabaseUrl
+$env:DATABASE_URL = $testDatabaseUrl
+npx.cmd prisma migrate deploy
+$env:DATABASE_URL = $developmentDatabaseUrl
+npm.cmd run test:postgres
+```
+
+Se `DATABASE_URL` normalmente vem apenas do `.env`, remova a variavel temporaria
+antes do teste em vez de atribuir valor vazio:
+
+```powershell
+Remove-Item Env:DATABASE_URL
+npm.cmd run test:postgres
+```
+
+Sem `FIXFLOW_TEST_DATABASE_URL`, a suite e explicitamente ignorada. Os testes
+limpam apenas os IDs/Organizations que criaram e sempre desconectam o Prisma.
 
 ## Seed
 
@@ -203,12 +278,17 @@ npm run start
 npm run lint
 npm run typecheck
 npm run test
+npm run test:postgres
 npm run test:watch
+npm run security:cleanup -- --dry-run
+npm run security:cleanup
 npm run db:seed
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:validate
 npm run prisma:format
+npx prisma generate
+git diff --check
 ```
 
 ## Validacao local antes de publicar
@@ -238,7 +318,7 @@ schema Prisma alterado sem decisao explicita.
 Existe um `Dockerfile`, mas esta fase nao documenta deploy de producao. O
 `docker-compose.yml` atual fornece apenas PostgreSQL local para desenvolvimento.
 Antes de producao, ainda seriam necessarios secrets reais em ambiente seguro,
-observabilidade, rotina de limpeza de `RateLimitCounter`, retencao de
-`SecurityAuditLog`, estrategia de deploy, CI, controles de borda e revisao de
-seguranca. Access logs do ambiente tambem devem ocultar tokens presentes em
-`/setup-account/[token]`.
+observabilidade, agendamento externo do cleanup implementado, estrategia de
+deploy, CI, controles de borda e revisao de seguranca. Access logs do ambiente
+tambem devem ocultar tokens presentes em `/setup-account/[token]` e
+`/reset-password/[token]`.

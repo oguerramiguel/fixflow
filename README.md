@@ -64,6 +64,10 @@ server-side e dados isolados por `Organization`.
 - Gestao de usuarios da Organization exclusiva para OWNER.
 - Convites manuais com token de uso unico armazenado somente como hash.
 - Configuracao publica de conta em `/setup-account/[token]`.
+- Alteracao da propria senha em `/app/settings/account`, com revogacao de todas
+  as sessoes.
+- Redefinicao assistida por OWNER com link manual, revogavel e de uso unico.
+- Limpeza manual e paginada de dados de seguranca, com modo dry-run.
 - Desativacao de usuario e revogacao de todas as suas sessoes.
 - Protecao transacional do ultimo OWNER ativo.
 - DTO publico minimo, separado dos DTOs internos.
@@ -84,6 +88,8 @@ server-side e dados isolados por `Organization`.
 | Portal publico | Implementado | Consulta por `publicCode` e decisao publica de Quote enviado. |
 | Base de seguranca | Implementado | Headers HTTP, rate limiting e auditoria de seguranca. |
 | Usuarios e convites | Implementado | OWNER gerencia equipe, convites manuais, roles, status e sessoes. |
+| Senha e recuperacao | Implementado | Troca autenticada e redefinicao assistida por OWNER, sem envio de email. |
+| Retencao de seguranca | Implementado | Cleanup manual em lotes, com dry-run e periodos configuraveis. |
 | Dashboard | Nao implementado | A pagina interna atual e uma area de operacao com links. |
 | E-mail/WhatsApp | Nao implementado | O envio do orcamento e apenas registro logico. |
 | PDF/pagamento | Nao implementado | Fora do escopo do MVP atual. |
@@ -109,6 +115,11 @@ server-side e dados isolados por `Organization`.
 - Auditoria de login, logout, bloqueios por rate limit e decisoes publicas.
 - Convites com token aleatorio de 32 bytes, SHA-256 persistido e validade de 72 horas.
 - Consumo atomico de convite e ativacao sem senha temporaria.
+- Tokens de redefinicao com 32 bytes, SHA-256 persistido, expiracao configuravel,
+  revogacao e consumo atomico.
+- Troca e redefinicao de senha revogam todas as sessoes do usuario.
+- Cleanup de sessoes, convites, tokens, contadores e auditoria em lotes
+  configuraveis.
 - Sessao revalida User ativo e Organization persistida a cada contexto.
 - Lock transacional da Organization para proteger o ultimo OWNER ativo.
 - Headers HTTP de seguranca com CSP inicial e HSTS somente em producao.
@@ -179,6 +190,16 @@ O fluxo administrativo de usuarios e separado do fluxo operacional:
 5. O convidado define a propria senha em `/setup-account/[token]`.
 6. O token e consumido atomicamente e o usuario passa a poder autenticar.
 
+Para credenciais de uma conta ativa:
+
+1. Qualquer usuario autenticado altera a propria senha em
+   `/app/settings/account`, informando a senha atual.
+2. O sistema atualiza o hash e revoga todas as sessoes, inclusive a corrente.
+3. Se o usuario nao souber a senha, um OWNER da mesma Organization gera um link
+   em `/app/settings/users`.
+4. O link e compartilhado manualmente e consumido em
+   `/reset-password/[token]`; nao ha email automatico nem login automatico.
+
 ## Portal publico
 
 O portal publico fica em:
@@ -208,6 +229,8 @@ disponivel quando o Quote esta em `SENT` e a ServiceOrder esta em
 - Senhas nao sao armazenadas em texto puro.
 - Tokens brutos de sessao nao sao persistidos no banco.
 - Tokens brutos de convite nao sao persistidos, logados ou auditados.
+- Tokens brutos de redefinicao de senha nao sao persistidos, logados ou
+  auditados; somente SHA-256 e armazenado.
 - Usuario convidado ou desativado nao consegue autenticar.
 - Sessoes existentes deixam de autorizar assim que o User e desativado.
 - Cookies de sessao usam `httpOnly`.
@@ -248,6 +271,9 @@ A suite local cobre:
 - aprovacao/rejeicao publica de Quote;
 - rate limiting e auditoria de seguranca;
 - gestao de usuarios, convites, setup de conta, roles e sessoes;
+- alteracao de senha e redefinicao assistida por OWNER;
+- consumo concorrente de tokens e revogacao de sessoes;
+- cleanup de seguranca em dry-run, lotes e execucao idempotente;
 - cabecalhos HTTP de seguranca;
 - DTO publico minimo e isolamento de dados.
 
@@ -342,12 +368,38 @@ npm.cmd run dev
 npx.cmd prisma migrate dev
 ```
 
+Para aplicar migrations ja versionadas em um ambiente controlado, sem criar
+migration nova:
+
+```powershell
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
+```
+
+Nao use `prisma migrate reset` nem `db push` como substituto.
+
+Antes de remover dados antigos de seguranca, confira o dry-run:
+
+```powershell
+npm.cmd run security:cleanup -- --dry-run
+npm.cmd run security:cleanup
+```
+
+O segundo comando e destrutivo para registros de seguranca elegiveis pelas
+retencoes, mas nao remove entidades de negocio. Nao ha agendamento embutido.
+
+Os testes PostgreSQL opcionais exigem `FIXFLOW_TEST_DATABASE_URL` diferente de
+`DATABASE_URL` e com nome de banco contendo `test`. Eles sao ignorados quando a
+variavel nao existe. O procedimento completo e seguro esta em
+`docs/local-development.md`.
+
 ## Variaveis de ambiente
 
 Variaveis esperadas no `.env` local:
 
 ```env
 DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixflow_dev?schema=public"
+FIXFLOW_TEST_DATABASE_URL=""
 
 FIXFLOW_APP_ENV="development"
 FIXFLOW_RATE_LIMIT_STORE="memory"
@@ -355,6 +407,12 @@ FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_WINDOW_SECONDS="300"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_WINDOW_SECONDS="900"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_LIMIT="5"
+FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_WINDOW_SECONDS="300"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS="60"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT="5"
@@ -363,6 +421,13 @@ FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_WINDOW_SECONDS="300"
 FIXFLOW_SECURITY_AUDIT_ENABLED="true"
 FIXFLOW_SECURITY_AUDIT_STORE="database"
+FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES="30"
+FIXFLOW_SECURITY_RETENTION_EXPIRED_SESSION_DAYS="7"
+FIXFLOW_SECURITY_RETENTION_CLOSED_INVITATION_DAYS="30"
+FIXFLOW_SECURITY_RETENTION_CLOSED_PASSWORD_RESET_DAYS="30"
+FIXFLOW_SECURITY_RETENTION_RATE_LIMIT_COUNTER_SECONDS="86400"
+FIXFLOW_SECURITY_RETENTION_AUDIT_LOG_DAYS="90"
+FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE="500"
 
 FIXFLOW_BOOTSTRAP_ORGANIZATION_NAME=""
 FIXFLOW_BOOTSTRAP_ORGANIZATION_SLUG=""
@@ -412,7 +477,10 @@ Scripts reais do `package.json`:
 | `npm run lint` | Executa ESLint no repositorio. |
 | `npm run typecheck` | Executa TypeScript sem emitir arquivos. |
 | `npm run test` | Executa Vitest uma vez. |
+| `npm run test:postgres` | Executa testes destrutivos opcionais em um banco de teste separado. |
 | `npm run test:watch` | Executa Vitest em modo watch. |
+| `npm run security:cleanup -- --dry-run` | Conta registros elegiveis sem excluir. |
+| `npm run security:cleanup` | Exclui dados de seguranca elegiveis em lotes. |
 | `npm run db:seed` | Executa o seed de desenvolvimento. |
 | `npm run prisma:generate` | Gera Prisma Client. |
 | `npm run prisma:migrate` | Executa `prisma migrate dev`. |
@@ -436,6 +504,10 @@ Scripts reais do `package.json`:
 13. Como OWNER, abrir `/app/settings/users` e criar um convite.
 14. Copiar o link exibido, abrir em janela anonima e definir a senha.
 15. Confirmar login do convidado e revogacao de sessoes pela tela administrativa.
+16. Alterar a propria senha em `/app/settings/account` e confirmar que todas as
+    sessoes pedem novo login.
+17. Como OWNER, gerar um link de redefinicao para um usuario ativo e consumi-lo
+    em janela anonima.
 
 ## Screenshots
 
@@ -488,20 +560,21 @@ Implementado:
 - diagnostico e orcamento;
 - portal publico por `publicCode`;
 - base de seguranca com headers, rate limiting e auditoria;
-- gestao de usuarios, convites manuais e sessoes.
+- gestao de usuarios, convites manuais e sessoes;
+- alteracao de senha, redefinicao assistida e cleanup manual de seguranca.
 
 Proximos passos possiveis:
 
 - proposta/PDF;
 - envio externo controlado do link publico;
 - observabilidade e alertas;
-- auditoria mais detalhada e politica de retencao;
+- agendamento externo e observabilidade do cleanup de seguranca;
 - deploy;
 - CI;
 - testes E2E;
 - melhorias visuais;
 - hardening de producao;
-- envio de convite por email e recuperacao de senha.
+- envio de convite ou link de redefinicao por email.
 
 Nao ha datas prometidas para esses itens.
 
@@ -516,7 +589,10 @@ Nao ha datas prometidas para esses itens.
 - Sem testes E2E.
 - Sem dashboard funcional.
 - Convites precisam ser compartilhados manualmente pelo OWNER.
-- Sem recuperacao de senha ou envio automatico de convite.
+- Recuperacao e assistida por OWNER; nao ha fluxo autonomo por email.
+- Um OWNER bloqueado depende de outro OWNER ativo; a recuperacao operacional do
+  unico OWNER fica fora desta fase.
+- O cleanup existe como comando manual; nao ha scheduler embutido.
 - Portal publico baseado em `publicCode` como capability URL.
 - Docker Compose fornece PostgreSQL local; nao e um setup completo de producao.
 

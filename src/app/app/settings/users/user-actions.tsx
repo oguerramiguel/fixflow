@@ -5,14 +5,17 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   changeUserRoleAction,
+  createPasswordResetLinkAction,
   disableUserAction,
   reactivateUserAction,
   reissueInvitationAction,
   revokeInvitationAction,
+  revokePasswordResetLinksAction,
   revokeUserSessionsAction,
   type UserManagementActionState
 } from "./actions";
 import { InvitationLinkPanel } from "./invitation-link-panel";
+import { PasswordResetLinkPanel } from "./password-reset-link-panel";
 import type {
   OrganizationUserStatus,
   UserInvitationStatus
@@ -155,6 +158,12 @@ function ConfirmedActionForm({
           expiresAt={state.expiresAt}
         />
       ) : null}
+      {state.passwordResetPath ? (
+        <PasswordResetLinkPanel
+          resetPath={state.passwordResetPath}
+          expiresAt={state.expiresAt}
+        />
+      ) : null}
     </div>
   );
 }
@@ -172,9 +181,16 @@ export function UserActions({
   const sessionsAction = revokeUserSessionsAction.bind(null, userId);
   const invitationAction = revokeInvitationAction.bind(null, userId);
   const reissueAction = reissueInvitationAction.bind(null, userId);
+  const passwordResetAction = createPasswordResetLinkAction.bind(null, userId);
+  const revokePasswordResetAction = revokePasswordResetLinksAction.bind(
+    null,
+    userId
+  );
   const canReissueInvitation =
     status === "INVITED" &&
-    (invitationStatus === "EXPIRED" || invitationStatus === "REVOKED");
+    (!invitationStatus ||
+      invitationStatus === "EXPIRED" ||
+      invitationStatus === "REVOKED");
 
   return (
     <div className="space-y-3">
@@ -235,6 +251,24 @@ export function UserActions({
             label="Gerar novo link"
             pendingLabel="Gerando..."
           />
+        ) : null}
+
+        {status === "ACTIVE" ? (
+          <>
+            <ConfirmedActionForm
+              action={passwordResetAction}
+              confirmation="Gerar um link de redefinicao? Um link pendente anterior sera revogado."
+              label="Gerar link de senha"
+              pendingLabel="Gerando..."
+            />
+            <ConfirmedActionForm
+              action={revokePasswordResetAction}
+              confirmation="Revogar qualquer link de redefinicao pendente deste usuario?"
+              label="Revogar link de senha"
+              pendingLabel="Revogando..."
+              variant="danger"
+            />
+          </>
         ) : null}
       </div>
     </div>

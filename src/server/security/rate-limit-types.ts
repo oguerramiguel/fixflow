@@ -1,4 +1,4 @@
-import { DomainError } from "@/domain/errors/domain-error";
+import { DomainError } from "../../domain/errors/domain-error";
 
 export const RATE_LIMIT_EXCEEDED_MESSAGE =
   "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
@@ -6,6 +6,9 @@ export const RATE_LIMIT_EXCEEDED_MESSAGE =
 export const rateLimitOperations = {
   loginAttempt: "LOGIN_ATTEMPT",
   accountSetupAttempt: "ACCOUNT_SETUP_ATTEMPT",
+  passwordChangeAttempt: "PASSWORD_CHANGE_ATTEMPT",
+  passwordResetCreate: "PASSWORD_RESET_CREATE",
+  passwordResetConsume: "PASSWORD_RESET_CONSUME",
   publicPortalLookup: "PUBLIC_PORTAL_LOOKUP",
   publicQuoteApprove: "PUBLIC_QUOTE_APPROVE",
   publicQuoteReject: "PUBLIC_QUOTE_REJECT"

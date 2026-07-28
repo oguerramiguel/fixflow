@@ -3,8 +3,9 @@
 ## Objetivo
 
 Este documento registra a base de seguranca da Fase 8.1 e os controles de
-usuarios, convites e sessoes da Fase 8.2A. O foco e preparar o MVP local para
-uma futura operacao em producao sem implementar funcionalidades comerciais.
+usuarios, convites e sessoes das Fases 8.2A e 8.2B. O foco e preparar o MVP
+local para uma futura operacao em producao sem implementar funcionalidades
+comerciais.
 
 ## Controles ja existentes
 
@@ -59,6 +60,24 @@ uma futura operacao em producao sem implementar funcionalidades comerciais.
 - Lock da linha de Organization antes de remover um OWNER ativo.
 - Protecao contra alteracao da propria role e desativacao da propria conta.
 
+## Controles adicionados na Fase 8.2B
+
+- Troca da propria senha exige contexto autenticado, senha atual e rate limit.
+- A nova senha nao pode ser equivalente a atual.
+- Troca e redefinicao de senha revogam todas as sessoes do User no mesmo commit.
+- Redefinicao assistida somente por OWNER da mesma Organization.
+- Conta alvo deve estar ativa e com senha configurada.
+- Token de redefinicao com 32 bytes; somente SHA-256 e persistido.
+- Token de uso unico, revogavel e com TTL configuravel.
+- Criacao serializada pelo lock da linha do User e constraint parcial para um
+  unico token pendente por User e Organization.
+- Consumo atomico com claim condicional para impedir dois vencedores
+  concorrentes.
+- Mensagens publicas genericas para token invalido, expirado, usado, revogado
+  ou conta indisponivel.
+- Cleanup manual, paginado e idempotente para tabelas de seguranca, com
+  dry-run e periodos de retencao configuraveis.
+
 ## Modelo basico de ameacas
 
 Principais ameacas consideradas:
@@ -71,6 +90,10 @@ Principais ameacas consideradas:
 - uso de User ID de outra Organization em actions administrativas;
 - consumo repetido ou concorrente do mesmo convite;
 - persistencia ou log acidental do token bruto de convite;
+- criacao de redefinicao por papel nao autorizado ou para outro tenant;
+- consumo repetido ou concorrente do mesmo token de redefinicao;
+- persistencia ou log acidental do token bruto de redefinicao;
+- manutencao de sessoes antigas depois de trocar ou redefinir senha;
 - manutencao de acesso por sessao depois da desativacao;
 - corrida que removeria o ultimo OWNER ativo;
 - tentativa de listar ou adivinhar `publicCode`;
@@ -87,18 +110,20 @@ Principais ameacas consideradas:
   controles de borda em producao.
 - O token aparece necessariamente na URL de setup; proxies e plataformas devem
   aplicar redaction dessa rota em access logs.
+- O token de redefinicao tambem aparece na URL; access logs devem ocultar
+  `/reset-password/[token]`.
 - O projeto ainda nao possui WAF, CAPTCHA, IDS, monitoramento ou alertas.
-- Nao ha MFA, recuperacao de senha, verificacao de email ou envio automatico
-  de convite.
-- Nao ha job automatico implementado para limpar sessoes expiradas, contadores
-  antigos ou logs de auditoria antigos.
+- Nao ha MFA, verificacao de email ou envio automatico de convite/redefinicao.
+- Se o unico OWNER perder acesso, nao existe recuperacao self-service nesta
+  fase; gerar o link exige outro OWNER autenticado.
+- O cleanup implementado depende de execucao manual ou agendamento externo; a
+  aplicacao nao inclui scheduler.
 - A CSP inicial permite `unsafe-inline` para compatibilidade com Next.js e
   estilos atuais; uma CSP com nonce pode ser avaliada futuramente.
 - Nao ha Row Level Security no PostgreSQL.
 
 ## Riscos pendentes
 
-- Definir retencao formal de auditoria por ambiente.
 - Definir processo operacional de rotacao de secrets.
 - Adicionar monitoramento de eventos de rate limit e falhas de auditoria.
 - Definir estrategia de backup com testes periodicos de restauracao.
@@ -117,9 +142,11 @@ Principais ameacas consideradas:
 - Em producao, `FIXFLOW_RATE_LIMIT_STORE` deve ser `database`.
 - Em producao, limites e janelas de cada operacao de rate limit devem estar
   explicitamente configurados.
-- Setup de conta usa
-  `FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT` e
-  `FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS`.
+- Limites e janelas de login, setup de conta, troca de senha, criacao/consumo
+  de redefinicao e portal publico usam variaveis `FIXFLOW_RATE_LIMIT_*`.
+- `FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES` define a validade de novos links.
+- `FIXFLOW_SECURITY_RETENTION_*` define os periodos de retencao e
+  `FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE` limita cada lote.
 - Em producao, `FIXFLOW_SECURITY_AUDIT_ENABLED` deve ser `true` e
   `FIXFLOW_SECURITY_AUDIT_STORE` deve ser `database`.
 - Configuracao ausente ou insegura em producao deve falhar com erro claro na
@@ -131,6 +158,9 @@ Operacoes protegidas:
 
 - `LOGIN_ATTEMPT`;
 - `ACCOUNT_SETUP_ATTEMPT`;
+- `PASSWORD_CHANGE_ATTEMPT`;
+- `PASSWORD_RESET_CREATE`;
+- `PASSWORD_RESET_CONSUME`;
 - `PUBLIC_PORTAL_LOOKUP`;
 - `PUBLIC_QUOTE_APPROVE`;
 - `PUBLIC_QUOTE_REJECT`.
@@ -142,20 +172,31 @@ O rate limiting usa janelas fixas. Em PostgreSQL, a tabela
 `upsert`, permitindo uma operacao atomica simples por janela.
 
 Chaves nunca armazenam senha, token de sessao, cookie ou `publicCode` bruto. O
-login usa hash do email normalizado. O portal publico usa hash do
-`publicCode` normalizado quando ele e valido e um hash generico para codigos
-invalidos. A origem da operacao tambem e reduzida a hash.
+login usa hash do email normalizado. Fluxos publicos de consulta, setup e reset
+sao limitados por hash da origem; um hash seguro do codigo/token aparece apenas
+como assunto minimizado da auditoria. Operacoes autenticadas de senha usam
+hashes de IDs internos confiaveis, sempre combinados com a origem minimizada.
 
-Limpeza recomendada:
+## Retencao e cleanup
 
-```sql
-DELETE FROM "RateLimitCounter"
-WHERE "windowExpiresAt" < now() - interval '1 day';
-```
+O comando `npm run security:cleanup` atua somente em:
 
-Em producao, essa limpeza deve virar job agendado do ambiente operacional. O
-helper `deleteExpiredRateLimitCounters` existe para ser reaproveitado por um job
-futuro.
+- `AuthSession` expirada alem da retencao;
+- `UserInvitation` usada, revogada ou expirada alem da retencao;
+- `PasswordResetToken` usado, revogado ou expirado alem da retencao;
+- `RateLimitCounter` cuja janela encerrou alem da retencao;
+- `SecurityAuditLog` anterior ao periodo configurado.
+
+Cada tabela e processada em lotes limitados com CTE, `LIMIT` e
+`FOR UPDATE SKIP LOCKED`. Nenhuma entidade de negocio e apagada. O modo
+`npm run security:cleanup -- --dry-run` apenas conta registros elegiveis, sem
+executar delete. A execucao real repete os lotes ate nao haver elegiveis e pode
+ser repetida com resultado zero.
+
+O resultado registra contagens por categoria e um evento
+`SECURITY_CLEANUP_EXECUTED`; metadados nao incluem valores das linhas removidas.
+O comando e manual. Em producao, o operador deve primeiro revisar o dry-run e
+agendar a execucao por mecanismo externo.
 
 ## Auditoria de seguranca
 
@@ -173,6 +214,12 @@ Eventos registrados:
 - `USER_REACTIVATED`;
 - `USER_SESSIONS_REVOKED`;
 - `USER_ADMIN_OPERATION_REJECTED`;
+- `PASSWORD_CHANGED`;
+- `PASSWORD_RESET_CREATED`;
+- `PASSWORD_RESET_TOKEN_REVOKED`;
+- `PASSWORD_RESET_COMPLETED`;
+- `PASSWORD_RESET_REJECTED`;
+- `SECURITY_CLEANUP_EXECUTED`;
 - `PUBLIC_QUOTE_APPROVED`;
 - `PUBLIC_QUOTE_REJECTED`.
 
@@ -205,6 +252,7 @@ Nunca registrar:
 - token de sessao;
 - `tokenHash`;
 - token bruto de convite ou link completo de setup;
+- token bruto de redefinicao ou link completo de reset;
 - `publicCode` bruto;
 - cabecalho Authorization;
 - conteudo completo de requisicoes;
@@ -233,12 +281,13 @@ Producao:
 - deve manter auditoria habilitada em banco;
 - deve rodar atras de HTTPS para HSTS e cookies `secure`;
 - deve usar secrets reais somente no ambiente seguro de deploy;
-- deve ter rotina de limpeza para rate limit e retencao de auditoria.
+- deve executar dry-run antes do cleanup real e agendar o comando por mecanismo
+  externo conforme a politica operacional.
 
 ## Backup e restauracao
 
-- Backups devem incluir tabelas de negocio, `AuthSession`, `RateLimitCounter` e
-  `SecurityAuditLog`.
+- Backups devem incluir tabelas de negocio, `AuthSession`,
+  `PasswordResetToken`, `RateLimitCounter` e `SecurityAuditLog`.
 - Restauracao deve ser testada periodicamente em ambiente separado.
 - Backups de producao devem ser criptografados e protegidos por acesso minimo.
 - Restauracoes nao devem sobrescrever desenvolvimento ou teste sem confirmacao
@@ -257,21 +306,21 @@ Producao:
 - [ ] Auditoria habilitada em banco.
 - [ ] Migrations aplicadas sem `migrate reset`.
 - [ ] Backups configurados e restauracao testada.
-- [ ] Rotina de limpeza de `RateLimitCounter` definida.
-- [ ] Retencao de `SecurityAuditLog` definida.
+- [ ] Retencoes e tamanho de lote definidos explicitamente.
+- [ ] Dry-run do cleanup revisado e agendamento externo definido.
 - [ ] Logs revisados para ausencia de senha, token e `publicCode` bruto.
 - [ ] Access logs aplicam redaction a `/setup-account/[token]`.
+- [ ] Access logs aplicam redaction a `/reset-password/[token]`.
 - [ ] Revisao de CSP apos qualquer novo asset externo.
 - [ ] Monitoramento e alertas planejados.
 
 ## Pendencias recomendadas para fases futuras
 
-- Job agendado para limpeza de contadores e sessoes expiradas.
-- Politica formal de retencao de auditoria.
+- Scheduler/worker para acionar o cleanup existente.
 - Observabilidade com metricas de rate limit e falhas de auditoria.
 - Revisao de CSP com nonce se o projeto evoluir para uma politica mais estrita.
 - Analise separada de Row Level Security.
-- MFA e recuperacao de senha.
-- Envio de convite por email sem reintroduzir token em logs.
+- MFA e recuperacao autonoma de senha.
+- Envio de convite/redefinicao por email sem reintroduzir token em logs.
 - CI com migrations, testes e lint.
 - Testes E2E para login, logout e portal publico.

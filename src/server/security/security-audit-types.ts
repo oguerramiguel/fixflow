@@ -11,6 +11,12 @@ export const securityAuditEventTypes = {
   userReactivated: "USER_REACTIVATED",
   userSessionsRevoked: "USER_SESSIONS_REVOKED",
   userAdminOperationRejected: "USER_ADMIN_OPERATION_REJECTED",
+  passwordChanged: "PASSWORD_CHANGED",
+  passwordResetCreated: "PASSWORD_RESET_CREATED",
+  passwordResetTokenRevoked: "PASSWORD_RESET_TOKEN_REVOKED",
+  passwordResetCompleted: "PASSWORD_RESET_COMPLETED",
+  passwordResetRejected: "PASSWORD_RESET_REJECTED",
+  securityCleanupExecuted: "SECURITY_CLEANUP_EXECUTED",
   publicQuoteApproved: "PUBLIC_QUOTE_APPROVED",
   publicQuoteRejected: "PUBLIC_QUOTE_REJECTED"
 } as const;

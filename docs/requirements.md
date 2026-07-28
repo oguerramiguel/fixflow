@@ -36,6 +36,9 @@ comunicacao com clientes e entrega dos equipamentos.
 - orcamentos;
 - timeline;
 - acompanhamento publico por codigo nao previsivel.
+- gestao de usuarios e convites;
+- alteracao de senha e redefinicao assistida;
+- manutencao manual de dados de seguranca.
 
 ## Requisitos funcionais
 
@@ -65,6 +68,14 @@ comunicacao com clientes e entrega dos equipamentos.
 - RF022: O sistema deve permitir convite manual e configuracao segura de conta
   com token de uso unico.
 - RF023: Desativar User deve revogar suas sessoes e impedir novos acessos.
+- RF024: Usuario autenticado deve poder alterar a propria senha informando a
+  senha atual, com revogacao de todas as suas sessoes.
+- RF025: OWNER deve poder criar e revogar link manual de redefinicao para User
+  ativo da propria Organization.
+- RF026: O sistema deve consumir token de redefinicao uma unica vez, atualizar
+  a senha e revogar sessoes e tokens pendentes atomicamente.
+- RF027: Operador deve poder inspecionar e remover dados de seguranca alem da
+  retencao em lotes, com dry-run.
 
 ## Requisitos nao funcionais
 
@@ -91,6 +102,14 @@ comunicacao com clientes e entrega dos equipamentos.
 - RNF019: Token bruto de convite nao deve ser persistido, logado ou auditado.
 - RNF020: Operacoes de User devem exigir Organization autenticada e impedir
   remocao do ultimo OWNER ativo.
+- RNF021: Token bruto de redefinicao nao deve ser persistido, logado ou
+  auditado.
+- RNF022: Criacao e consumo de redefinicao devem resistir a concorrencia e
+  manter isolamento por Organization.
+- RNF023: Troca e redefinicao de senha devem ter rate limiting e auditoria
+  minimizada.
+- RNF024: Cleanup deve ser limitado a tabelas de seguranca, paginado,
+  idempotente e configuravel por ambiente.
 
 ## Status da Fase 2
 
@@ -189,7 +208,7 @@ Requisitos nao funcionais reforcados nesta fase:
 - RNF008: lint, typecheck, testes, build e validacoes Prisma permanecem
   obrigatorios.
 
-Continuam fora do escopo implementado:
+Naquela fase, continuavam fora do escopo implementado:
 
 - portal publico;
 - aprovacao publica;
@@ -247,7 +266,7 @@ Requisitos nao funcionais reforcados nesta fase:
   publicas sem senha, cookie, token ou `publicCode` bruto.
 - RNF018: headers HTTP de seguranca e CSP inicial adicionados centralmente.
 
-Continuam fora do escopo implementado:
+Naquela fase, continuavam fora do escopo implementado:
 
 - recuperacao de senha;
 - envio de email;
@@ -269,7 +288,7 @@ A Fase 8.2A implementa gestao de usuarios, convites e sessoes:
 - RNF020: actions e services reautorizam OWNER, repositories filtram tenant e
   lock transacional protege o ultimo OWNER ativo.
 
-Continuam fora do escopo:
+Naquela fase, continuavam fora do escopo:
 
 - envio de email;
 - recuperacao de senha;
@@ -277,10 +296,38 @@ Continuam fora do escopo:
 - verificacao de email;
 - usuario em multiplas Organizations.
 
+## Status da Fase 8.2B
+
+A Fase 8.2B implementa ciclo de senha e manutencao de seguranca:
+
+- RF024: OWNER, ADMIN e TECHNICIAN alteram a propria senha com verificacao da
+  senha atual e revogacao atomica de todas as sessoes;
+- RF025: OWNER gera ou revoga link manual somente para User ativo do mesmo
+  tenant;
+- RF026: token de 32 bytes e persistido apenas como SHA-256, expira, e de uso
+  unico e possui claim atomico com um unico vencedor concorrente;
+- RF027: cleanup manual possui dry-run, retencoes configuraveis e deletes em
+  lotes apenas nas tabelas de seguranca;
+- RNF021: senha, token bruto e link completo ficam fora de banco, logs e
+  auditoria;
+- RNF022: relations compostas, lock do User e indice unique parcial protegem
+  tenant e concorrencia;
+- RNF023: troca, criacao e consumo possuem rate limiting e eventos de auditoria;
+- RNF024: cleanup e paginado, repetivel e preserva entidades de negocio.
+
+Continuam fora do escopo:
+
+- recuperacao autonoma por email;
+- recuperacao operacional do unico OWNER bloqueado;
+- envio automatico de convite ou redefinicao;
+- MFA e verificacao de email;
+- scheduler/worker embutido;
+- usuario em multiplas Organizations.
+
 ## Fora do escopo inicial
 
 - cadastro publico de usuarios;
-- recuperacao ou redefinicao de senha;
+- recuperacao autonoma de senha;
 - verificacao de email;
 - MFA;
 - CRUDs completos;

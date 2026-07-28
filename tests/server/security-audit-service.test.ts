@@ -23,6 +23,18 @@ const config: SecurityRuntimeConfig = {
         limit: 5,
         windowSeconds: 300
       },
+      PASSWORD_CHANGE_ATTEMPT: {
+        limit: 5,
+        windowSeconds: 300
+      },
+      PASSWORD_RESET_CREATE: {
+        limit: 5,
+        windowSeconds: 900
+      },
+      PASSWORD_RESET_CONSUME: {
+        limit: 5,
+        windowSeconds: 300
+      },
       PUBLIC_PORTAL_LOOKUP: {
         limit: 60,
         windowSeconds: 60
@@ -40,6 +52,19 @@ const config: SecurityRuntimeConfig = {
   audit: {
     enabled: true,
     store: "database"
+  },
+  passwordReset: {
+    tokenTtlMinutes: 30
+  },
+  retention: {
+    expiredSessionDays: 7,
+    closedInvitationDays: 30,
+    closedPasswordResetDays: 30,
+    rateLimitCounterSeconds: 86400,
+    auditLogDays: 90
+  },
+  cleanup: {
+    batchSize: 500
   }
 };
 

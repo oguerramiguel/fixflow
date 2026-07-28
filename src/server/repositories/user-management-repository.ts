@@ -1,4 +1,4 @@
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma, UserRole, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import type { TenantContext } from "@/server/repositories/tenant-context";
 
@@ -234,9 +234,10 @@ export async function createInvitedUserWithInvitation(
 export async function changeOrganizationUserRole(
   context: TenantContext,
   userId: string,
-  role: UserRole
+  role: UserRole,
+  database: PrismaClient = prisma
 ): Promise<OrganizationUserMutationResult> {
-  return prisma.$transaction(async (transaction) => {
+  return database.$transaction(async (transaction) => {
     const organizationExists = await lockOrganizationForUserManagement(
       transaction,
       context.organizationId
@@ -500,18 +501,46 @@ export async function replaceOrganizationUserInvitation(
         userId
       );
 
+      if (!user) {
+        return {
+          outcome: "not_found"
+        };
+      }
+
       if (
-        !user ||
         user.passwordHash !== null ||
         user.disabledAt !== null ||
-        !user.invitation ||
-        user.invitation.usedAt !== null ||
-        (user.invitation.revokedAt === null &&
+        user.invitation?.usedAt != null ||
+        (user.invitation &&
+          user.invitation.revokedAt === null &&
           user.invitation.expiresAt > input.now)
       ) {
         return {
-          outcome: user ? "invitation_unavailable" : "not_found"
+          outcome: "invitation_unavailable"
         };
+      }
+
+      if (!user.invitation) {
+        await transaction.userInvitation.create({
+          data: {
+            organizationId: context.organizationId,
+            userId: user.id,
+            tokenHash: input.tokenHash,
+            expiresAt: input.expiresAt
+          }
+        });
+
+        const recreatedUser = await findOrganizationUserInTransaction(
+          transaction,
+          context,
+          user.id
+        );
+
+        if (!recreatedUser) {
+          throw new Error("User was not found after invitation recreation.");
+        }
+
+        return createUpdatedResult(recreatedUser);
       }
 
       const updateResult = await transaction.userInvitation.updateMany({
@@ -595,10 +624,11 @@ export async function findAccountSetupInvitationByTokenHash(
 export async function consumeAccountSetupInvitation(
   tokenHash: string,
   passwordHash: string,
-  now: Date
+  now: Date,
+  database: PrismaClient = prisma
 ): Promise<ConsumedAccountSetupInvitation | null> {
   try {
-    return await prisma.$transaction(async (transaction) => {
+    return await database.$transaction(async (transaction) => {
       const claimResult = await transaction.userInvitation.updateMany({
         where: {
           tokenHash,

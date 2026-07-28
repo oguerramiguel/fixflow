@@ -2,7 +2,7 @@ import {
   rateLimitOperations,
   type RateLimitOperation,
   type RateLimitPolicy
-} from "@/server/security/rate-limit-types";
+} from "./rate-limit-types";
 
 export const runtimeEnvironments = [
   "development",
@@ -16,6 +16,9 @@ export type SecurityAuditStoreKind = "database";
 
 export type SecurityRuntimeConfig = {
   appEnvironment: RuntimeEnvironment;
+  passwordReset: {
+    tokenTtlMinutes: number;
+  };
   rateLimit: {
     store: RateLimitStoreKind;
     policies: Record<RateLimitOperation, RateLimitPolicy>;
@@ -23,6 +26,16 @@ export type SecurityRuntimeConfig = {
   audit: {
     enabled: boolean;
     store: SecurityAuditStoreKind;
+  };
+  retention: {
+    expiredSessionDays: number;
+    closedInvitationDays: number;
+    closedPasswordResetDays: number;
+    rateLimitCounterSeconds: number;
+    auditLogDays: number;
+  };
+  cleanup: {
+    batchSize: number;
   };
 };
 
@@ -39,6 +52,18 @@ const defaultRateLimitPolicies: Record<RateLimitOperation, RateLimitPolicy> = {
     windowSeconds: 300
   },
   [rateLimitOperations.accountSetupAttempt]: {
+    limit: 5,
+    windowSeconds: 300
+  },
+  [rateLimitOperations.passwordChangeAttempt]: {
+    limit: 5,
+    windowSeconds: 300
+  },
+  [rateLimitOperations.passwordResetCreate]: {
+    limit: 5,
+    windowSeconds: 900
+  },
+  [rateLimitOperations.passwordResetConsume]: {
     limit: 5,
     windowSeconds: 300
   },
@@ -64,6 +89,18 @@ const rateLimitPolicyEnvKeys = {
   [rateLimitOperations.accountSetupAttempt]: {
     limit: "FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT",
     windowSeconds: "FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS"
+  },
+  [rateLimitOperations.passwordChangeAttempt]: {
+    limit: "FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_LIMIT",
+    windowSeconds: "FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_WINDOW_SECONDS"
+  },
+  [rateLimitOperations.passwordResetCreate]: {
+    limit: "FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_LIMIT",
+    windowSeconds: "FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_WINDOW_SECONDS"
+  },
+  [rateLimitOperations.passwordResetConsume]: {
+    limit: "FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_LIMIT",
+    windowSeconds: "FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_WINDOW_SECONDS"
   },
   [rateLimitOperations.publicPortalLookup]: {
     limit: "FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT",
@@ -106,11 +143,15 @@ function readRuntimeEnvironment(
   return rawEnvironment;
 }
 
-function readPositiveInteger(
+function readBoundedInteger(
   env: NodeJS.ProcessEnv,
   key: string,
   defaultValue: number,
-  appEnvironment: RuntimeEnvironment
+  appEnvironment: RuntimeEnvironment,
+  limits: {
+    min: number;
+    max: number;
+  }
 ): number {
   const rawValue = env[key]?.trim();
 
@@ -124,11 +165,23 @@ function readPositiveInteger(
     return defaultValue;
   }
 
-  if (!/^[1-9]\d*$/.test(rawValue)) {
-    throw new SecurityConfigurationError(`${key} must be a positive integer.`);
+  if (!/^(?:0|[1-9]\d*)$/.test(rawValue)) {
+    throw new SecurityConfigurationError(`${key} must be an integer.`);
   }
 
-  return Number(rawValue);
+  const value = Number(rawValue);
+
+  if (
+    !Number.isSafeInteger(value) ||
+    value < limits.min ||
+    value > limits.max
+  ) {
+    throw new SecurityConfigurationError(
+      `${key} must be between ${limits.min} and ${limits.max}.`
+    );
+  }
+
+  return value;
 }
 
 function readBoolean(
@@ -227,22 +280,124 @@ function readRateLimitPolicies(
       return [
         operation,
         {
-          limit: readPositiveInteger(
+          limit: readBoundedInteger(
             env,
             keys.limit,
             defaultPolicy.limit,
-            appEnvironment
+            appEnvironment,
+            {
+              min: 1,
+              max: 10000
+            }
           ),
-          windowSeconds: readPositiveInteger(
+          windowSeconds: readBoundedInteger(
             env,
             keys.windowSeconds,
             defaultPolicy.windowSeconds,
-            appEnvironment
+            appEnvironment,
+            {
+              min: 1,
+              max: 604800
+            }
           )
         }
       ];
     })
   ) as Record<RateLimitOperation, RateLimitPolicy>;
+}
+
+function readPasswordResetConfig(
+  env: NodeJS.ProcessEnv,
+  appEnvironment: RuntimeEnvironment
+): SecurityRuntimeConfig["passwordReset"] {
+  return {
+    tokenTtlMinutes: readBoundedInteger(
+      env,
+      "FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES",
+      30,
+      appEnvironment,
+      {
+        min: 5,
+        max: 1440
+      }
+    )
+  };
+}
+
+function readRetentionConfig(
+  env: NodeJS.ProcessEnv,
+  appEnvironment: RuntimeEnvironment
+): SecurityRuntimeConfig["retention"] {
+  return {
+    expiredSessionDays: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_RETENTION_EXPIRED_SESSION_DAYS",
+      7,
+      appEnvironment,
+      {
+        min: 1,
+        max: 365
+      }
+    ),
+    closedInvitationDays: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_RETENTION_CLOSED_INVITATION_DAYS",
+      30,
+      appEnvironment,
+      {
+        min: 1,
+        max: 3650
+      }
+    ),
+    closedPasswordResetDays: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_RETENTION_CLOSED_PASSWORD_RESET_DAYS",
+      30,
+      appEnvironment,
+      {
+        min: 1,
+        max: 3650
+      }
+    ),
+    rateLimitCounterSeconds: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_RETENTION_RATE_LIMIT_COUNTER_SECONDS",
+      86400,
+      appEnvironment,
+      {
+        min: 0,
+        max: 604800
+      }
+    ),
+    auditLogDays: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_RETENTION_AUDIT_LOG_DAYS",
+      90,
+      appEnvironment,
+      {
+        min: 1,
+        max: 3650
+      }
+    )
+  };
+}
+
+function readCleanupConfig(
+  env: NodeJS.ProcessEnv,
+  appEnvironment: RuntimeEnvironment
+): SecurityRuntimeConfig["cleanup"] {
+  return {
+    batchSize: readBoundedInteger(
+      env,
+      "FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE",
+      500,
+      appEnvironment,
+      {
+        min: 1,
+        max: 5000
+      }
+    )
+  };
 }
 
 export function getSecurityRuntimeConfig(
@@ -264,6 +419,7 @@ export function getSecurityRuntimeConfig(
 
   return {
     appEnvironment,
+    passwordReset: readPasswordResetConfig(env, appEnvironment),
     rateLimit: {
       store: readRateLimitStore(env, appEnvironment),
       policies: readRateLimitPolicies(env, appEnvironment)
@@ -271,6 +427,8 @@ export function getSecurityRuntimeConfig(
     audit: {
       enabled: auditEnabled,
       store: readSecurityAuditStore(env, appEnvironment)
-    }
+    },
+    retention: readRetentionConfig(env, appEnvironment),
+    cleanup: readCleanupConfig(env, appEnvironment)
   };
 }

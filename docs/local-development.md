@@ -315,10 +315,21 @@ schema Prisma alterado sem decisao explicita.
 
 ## Observacoes sobre producao
 
-Existe um `Dockerfile`, mas esta fase nao documenta deploy de producao. O
-`docker-compose.yml` atual fornece apenas PostgreSQL local para desenvolvimento.
-Antes de producao, ainda seriam necessarios secrets reais em ambiente seguro,
-observabilidade, agendamento externo do cleanup implementado, estrategia de
-deploy, CI, controles de borda e revisao de seguranca. Access logs do ambiente
-tambem devem ocultar tokens presentes em `/setup-account/[token]` e
+O `docker-compose.yml` continua exclusivo de desenvolvimento. O staging local
+usa `docker-compose.staging.yml` e o procedimento de `docs/staging.md`; nao
+reutilize volume ou credenciais entre os dois ambientes.
+
+O Dockerfile possui alvos `runner` e `migration`. Consulte
+`docs/deployment.md`, `docs/backup-restore.md` e
+`docs/operations-runbook.md`. Esses artefatos nao significam que exista deploy
+publico.
+
+Comandos operacionais novos:
+
+```powershell
+npm.cmd run deploy:check
+npm.cmd run smoke:production -- --base-url http://localhost:3100
+```
+
+Access logs devem ocultar tokens em `/setup-account/[token]` e
 `/reset-password/[token]`.

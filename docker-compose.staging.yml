@@ -1,0 +1,81 @@
+name: fixflow-staging
+
+services:
+  postgres:
+    image: postgres:16.4-alpine3.20
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${FIXFLOW_STAGING_DB_NAME:?configure FIXFLOW_STAGING_DB_NAME}"
+      POSTGRES_USER: "${FIXFLOW_STAGING_DB_USER:?configure FIXFLOW_STAGING_DB_USER}"
+      POSTGRES_PASSWORD: "${FIXFLOW_STAGING_DB_PASSWORD:?configure FIXFLOW_STAGING_DB_PASSWORD}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  migration:
+    build:
+      context: .
+      target: migration
+    restart: "no"
+    env_file:
+      - .env.staging
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${FIXFLOW_STAGING_DB_USER:?configure FIXFLOW_STAGING_DB_USER}:${FIXFLOW_STAGING_DB_PASSWORD:?configure FIXFLOW_STAGING_DB_PASSWORD}@postgres:5432/${FIXFLOW_STAGING_DB_NAME:?configure FIXFLOW_STAGING_DB_NAME}?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  web:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    env_file:
+      - .env.staging
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: "postgresql://${FIXFLOW_STAGING_DB_USER:?configure FIXFLOW_STAGING_DB_USER}:${FIXFLOW_STAGING_DB_PASSWORD:?configure FIXFLOW_STAGING_DB_PASSWORD}@postgres:5432/${FIXFLOW_STAGING_DB_NAME:?configure FIXFLOW_STAGING_DB_NAME}?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health/ready').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+    ports:
+      - "127.0.0.1:${FIXFLOW_STAGING_APP_PORT:-3100}:3000"
+    networks:
+      - edge
+      - backend
+
+volumes:
+  staging_postgres_data:
+
+networks:
+  edge:
+  backend:
+    internal: true

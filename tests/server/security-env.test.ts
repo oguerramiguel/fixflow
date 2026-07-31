@@ -81,7 +81,9 @@ describe("security runtime config", () => {
         ...productionEnv,
         FIXFLOW_RATE_LIMIT_STORE: "memory"
       })
-    ).toThrow("FIXFLOW_RATE_LIMIT_STORE must be database in production.");
+    ).toThrow(
+      "FIXFLOW_RATE_LIMIT_STORE must be database in staging and production."
+    );
   });
 
   it("rejects disabled audit in production", () => {
@@ -90,7 +92,28 @@ describe("security runtime config", () => {
         ...productionEnv,
         FIXFLOW_SECURITY_AUDIT_ENABLED: "false"
       })
-    ).toThrow("FIXFLOW_SECURITY_AUDIT_ENABLED cannot be false in production.");
+    ).toThrow(
+      "FIXFLOW_SECURITY_AUDIT_ENABLED cannot be false in staging or production."
+    );
+  });
+
+  it("treats staging as a deployed environment with persistent stores", () => {
+    expect(
+      getSecurityRuntimeConfig({
+        ...productionEnv,
+        FIXFLOW_APP_ENV: "staging"
+      }).appEnvironment
+    ).toBe("staging");
+
+    expect(() =>
+      getSecurityRuntimeConfig({
+        ...productionEnv,
+        FIXFLOW_APP_ENV: "staging",
+        FIXFLOW_RATE_LIMIT_STORE: "memory"
+      })
+    ).toThrow(
+      "FIXFLOW_RATE_LIMIT_STORE must be database in staging and production."
+    );
   });
 
   it("rejects password reset and cleanup values outside safe bounds", () => {

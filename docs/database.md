@@ -448,3 +448,18 @@ existentes.
   identidade + memberships.
 - Agendar externamente o cleanup manual existente.
 - Executar os testes de integracao PostgreSQL em banco separado na CI.
+
+## Operacao da Fase 9A
+
+A Fase 9A nao altera `schema.prisma` nem migrations antigas. O job de release
+usa somente `prisma migrate deploy`; web nunca aplica migration no startup.
+`deploy:check` compara os diretorios versionados com `_prisma_migrations`,
+confirma tabelas essenciais e stores persistentes sem executar escrita.
+
+O Compose de staging usa volume proprio e PostgreSQL sem porta publicada. O
+banco de CI possui nome contendo `test`, recebe migrations versionadas e e
+descartavel. Seed demo nao roda automaticamente.
+
+Backup e restore estao em `docs/backup-restore.md`. Restore usa banco separado,
+validacao de integridade, preflight e smoke antes de qualquer decisao
+operacional.

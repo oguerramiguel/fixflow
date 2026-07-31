@@ -13,8 +13,14 @@ type AuthSessionCookieOptions = {
   expires?: Date;
 };
 
-function isProduction(): boolean {
-  return process.env.NODE_ENV === "production";
+export function shouldUseSecureSessionCookie(
+  env = process.env
+): boolean {
+  return (
+    env.NODE_ENV === "production" ||
+    env.FIXFLOW_APP_ENV === "staging" ||
+    env.FIXFLOW_APP_ENV === "production"
+  );
 }
 
 export function getSessionCookieOptions(
@@ -24,7 +30,7 @@ export function getSessionCookieOptions(
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: isProduction(),
+    secure: shouldUseSecureSessionCookie(),
     maxAge: AUTH_SESSION_DURATION_SECONDS,
     expires: expiresAt
   };
@@ -35,7 +41,7 @@ export function getExpiredSessionCookieOptions(): AuthSessionCookieOptions {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: isProduction(),
+    secure: shouldUseSecureSessionCookie(),
     maxAge: 0,
     expires: new Date(0)
   };

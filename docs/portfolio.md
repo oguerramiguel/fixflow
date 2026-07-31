@@ -159,7 +159,7 @@ Nao use imagens falsas nem referencie arquivos que nao existem.
 ## Limites honestos do MVP
 
 - Sem deploy publico.
-- Sem CI/CD.
+- Com CI de qualidade, mas sem CD ou deploy automatico.
 - Sem e-mail, WhatsApp ou SMS real.
 - Convites e redefinicoes sao compartilhados manualmente; sem recuperacao
   autonoma por email.
@@ -169,7 +169,8 @@ Nao use imagens falsas nem referencie arquivos que nao existem.
 - Sem dashboard funcional.
 - Sem testes E2E.
 - Sem observabilidade de producao, WAF ou CAPTCHA.
-- Sem hardening completo de producao.
+- Com baseline de readiness, ainda sem infraestrutura, observabilidade ou
+  hardening de um provedor real.
 
 Esses limites sao escolhas de escopo para um MVP local e podem orientar fases
 futuras.

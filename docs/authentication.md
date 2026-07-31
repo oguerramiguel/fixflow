@@ -326,3 +326,15 @@ sequenceDiagram
 
 Esses pontos sao riscos ou evolucoes futuras, nao funcionalidades simuladas na
 versao atual.
+
+## Runtime implantado
+
+Staging e producao usam cookies seguros mesmo que o ambiente logico de staging
+seja distinto de production. `src/instrumentation.ts` valida a configuracao no
+startup, e o runtime recusa bootstrap ou demo seed habilitado.
+
+A origem usada em rate limit so considera `X-Forwarded-For`/`X-Real-IP` quando
+`FIXFLOW_TRUST_PROXY=true` e o operador garante um proxy que sobrescreve esses
+headers. Allowed origins de Server Actions e URL-base sao explicitos. Nenhuma
+dessas configuracoes altera o tenant confiavel, que continua vindo do User
+persistido.

@@ -137,8 +137,8 @@ Principais ameacas consideradas:
 - Valores sensiveis nao devem usar prefixo `NEXT_PUBLIC`.
 - `DATABASE_URL` de producao deve vir de um gerenciador seguro de secrets do
   ambiente de deploy.
-- `FIXFLOW_APP_ENV` deve representar o ambiente logico: `development`, `test`
-  ou `production`.
+- `FIXFLOW_APP_ENV` deve representar o ambiente logico: `development`, `test`,
+  `staging` ou `production`.
 - Em producao, `FIXFLOW_RATE_LIMIT_STORE` deve ser `database`.
 - Em producao, limites e janelas de cada operacao de rate limit devem estar
   explicitamente configurados.
@@ -151,6 +151,20 @@ Principais ameacas consideradas:
   `FIXFLOW_SECURITY_AUDIT_STORE` deve ser `database`.
 - Configuracao ausente ou insegura em producao deve falhar com erro claro na
   primeira utilizacao relevante.
+- Staging recebe os mesmos requisitos persistentes e de retencao de producao.
+- URL-base, release, timeout de readiness, decisao de proxy e allowed origins
+  sao obrigatorios em ambientes implantados.
+- Bootstrap e demo seed habilitado sao recusados pelo runtime implantado.
+
+## Proxy, origins e transporte
+
+`X-Forwarded-For` e `X-Real-IP` so sao considerados quando
+`FIXFLOW_TRUST_PROXY=true`. Essa opcao exige trafego exclusivamente por um proxy
+confiavel que sobrescreva esses headers. Sem essa garantia, use `false`.
+
+Allowed origins de Server Actions usa hosts exatos separados por virgula, sem
+esquema, caminho ou wildcard, e inclui o host da URL-base. Producao exige
+URL-base HTTPS. O edge deve redirecionar HTTP e preservar cookies seguros/HSTS.
 
 ## Rate limiting
 
@@ -299,6 +313,8 @@ Producao:
 
 - [ ] `NODE_ENV=production`.
 - [ ] `FIXFLOW_APP_ENV=production`.
+- [ ] URL-base HTTPS e release SHA correspondem a release.
+- [ ] Trusted proxy e allowed origins foram definidos explicitamente.
 - [ ] HTTPS configurado antes de expor a aplicacao.
 - [ ] `DATABASE_URL` de producao configurada como secret.
 - [ ] `FIXFLOW_RATE_LIMIT_STORE=database`.
@@ -313,6 +329,7 @@ Producao:
 - [ ] Access logs aplicam redaction a `/reset-password/[token]`.
 - [ ] Revisao de CSP apos qualquer novo asset externo.
 - [ ] Monitoramento e alertas planejados.
+- [ ] `deploy:check` e `smoke:production` concluidos sem detalhes internos.
 
 ## Pendencias recomendadas para fases futuras
 

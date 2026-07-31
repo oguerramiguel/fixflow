@@ -7,6 +7,7 @@ import {
 export const runtimeEnvironments = [
   "development",
   "test",
+  "staging",
   "production"
 ] as const;
 
@@ -44,6 +45,12 @@ export class SecurityConfigurationError extends Error {
     super(message);
     this.name = "SecurityConfigurationError";
   }
+}
+
+export function isDeployedEnvironment(
+  environment: RuntimeEnvironment
+): boolean {
+  return environment === "staging" || environment === "production";
 }
 
 const defaultRateLimitPolicies: Record<RateLimitOperation, RateLimitPolicy> = {
@@ -130,13 +137,17 @@ function readRuntimeEnvironment(
 
   if (!isRuntimeEnvironment(rawEnvironment)) {
     throw new SecurityConfigurationError(
-      "FIXFLOW_APP_ENV must be development, test or production."
+      "FIXFLOW_APP_ENV must be development, test, staging or production."
     );
   }
 
-  if (env.NODE_ENV === "production" && rawEnvironment !== "production") {
+  if (
+    env.NODE_ENV === "production" &&
+    rawEnvironment !== "staging" &&
+    rawEnvironment !== "production"
+  ) {
     throw new SecurityConfigurationError(
-      "FIXFLOW_APP_ENV must be production when NODE_ENV is production."
+      "FIXFLOW_APP_ENV must be staging or production when NODE_ENV is production."
     );
   }
 
@@ -156,9 +167,9 @@ function readBoundedInteger(
   const rawValue = env[key]?.trim();
 
   if (!rawValue) {
-    if (appEnvironment === "production") {
+    if (isDeployedEnvironment(appEnvironment)) {
       throw new SecurityConfigurationError(
-        `${key} must be configured in production.`
+        `${key} must be configured in staging and production.`
       );
     }
 
@@ -193,9 +204,9 @@ function readBoolean(
   const rawValue = env[key]?.trim().toLowerCase();
 
   if (!rawValue) {
-    if (appEnvironment === "production") {
+    if (isDeployedEnvironment(appEnvironment)) {
       throw new SecurityConfigurationError(
-        `${key} must be configured in production.`
+        `${key} must be configured in staging and production.`
       );
     }
 
@@ -220,9 +231,9 @@ function readRateLimitStore(
   const rawStore = env.FIXFLOW_RATE_LIMIT_STORE?.trim();
 
   if (!rawStore) {
-    if (appEnvironment === "production") {
+    if (isDeployedEnvironment(appEnvironment)) {
       throw new SecurityConfigurationError(
-        "FIXFLOW_RATE_LIMIT_STORE must be configured in production."
+        "FIXFLOW_RATE_LIMIT_STORE must be configured in staging and production."
       );
     }
 
@@ -235,9 +246,9 @@ function readRateLimitStore(
     );
   }
 
-  if (appEnvironment === "production" && rawStore !== "database") {
+  if (isDeployedEnvironment(appEnvironment) && rawStore !== "database") {
     throw new SecurityConfigurationError(
-      "FIXFLOW_RATE_LIMIT_STORE must be database in production."
+      "FIXFLOW_RATE_LIMIT_STORE must be database in staging and production."
     );
   }
 
@@ -251,9 +262,9 @@ function readSecurityAuditStore(
   const rawStore = env.FIXFLOW_SECURITY_AUDIT_STORE?.trim();
 
   if (!rawStore) {
-    if (appEnvironment === "production") {
+    if (isDeployedEnvironment(appEnvironment)) {
       throw new SecurityConfigurationError(
-        "FIXFLOW_SECURITY_AUDIT_STORE must be configured in production."
+        "FIXFLOW_SECURITY_AUDIT_STORE must be configured in staging and production."
       );
     }
 
@@ -411,9 +422,9 @@ export function getSecurityRuntimeConfig(
     appEnvironment
   );
 
-  if (appEnvironment === "production" && !auditEnabled) {
+  if (isDeployedEnvironment(appEnvironment) && !auditEnabled) {
     throw new SecurityConfigurationError(
-      "FIXFLOW_SECURITY_AUDIT_ENABLED cannot be false in production."
+      "FIXFLOW_SECURITY_AUDIT_ENABLED cannot be false in staging or production."
     );
   }
 

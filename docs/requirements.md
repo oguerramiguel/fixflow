@@ -76,6 +76,11 @@ comunicacao com clientes e entrega dos equipamentos.
   a senha e revogar sessoes e tokens pendentes atomicamente.
 - RF027: Operador deve poder inspecionar e remover dados de seguranca alem da
   retencao em lotes, com dry-run.
+- RF028: A plataforma deve expor liveness sem dependencias e readiness com
+  verificacao limitada do PostgreSQL.
+- RF029: Operadores devem poder executar preflight e smoke nao destrutivos.
+- RF030: Um seed demo completo deve ser idempotente, opt-in e proibido em
+  producao.
 
 ## Requisitos nao funcionais
 
@@ -110,6 +115,13 @@ comunicacao com clientes e entrega dos equipamentos.
   minimizada.
 - RNF024: Cleanup deve ser limitado a tabelas de seguranca, paginado,
   idempotente e configuravel por ambiente.
+- RNF025: Staging e producao devem falhar cedo quando configuracao obrigatoria
+  ou stores persistentes estiverem ausentes.
+- RNF026: O runtime de container deve ser standalone, minimo e non-root, com
+  migrations separadas do startup web.
+- RNF027: CI deve usar banco de teste isolado, migrations versionadas e
+  permissoes minimas, sem deploy.
+- RNF028: Releases devem expor identificador seguro sem secrets.
 
 ## Status da Fase 2
 
@@ -323,6 +335,24 @@ Continuam fora do escopo:
 - MFA e verificacao de email;
 - scheduler/worker embutido;
 - usuario em multiplas Organizations.
+
+## Status da Fase 9A
+
+A Fase 9A implementa readiness de staging/producao sem escolher provedor ou
+executar deploy real:
+
+- RF028: health separado, com timeout e respostas seguras;
+- RF029: `deploy:check` e `smoke:production` nao destrutivos;
+- RF030: seed demo ficticio, sem delete, condicionado a flag e proibido em
+  producao;
+- RNF025: runtime central para development, test, staging e production;
+- RNF026: Docker multi-stage non-root e job separado de migrations;
+- RNF027: GitHub Actions valida Prisma, testes, PostgreSQL, lint, typecheck,
+  build e diff sem deploy;
+- RNF028: health e startup identificam versao e release SHA.
+
+Continuam fora do escopo: provedor, infraestrutura real, CD, dominio publico,
+TLS gerenciado, observabilidade contratada e execucao real de backup/restore.
 
 ## Fora do escopo inicial
 

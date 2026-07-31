@@ -7,7 +7,8 @@
 Plataforma web multi-tenant para gestao de assistencias tecnicas de notebooks e
 computadores.
 
-**Status do projeto:** em desenvolvimento, com MVP funcional local.
+**Status do projeto:** em desenvolvimento, com MVP funcional local e artefatos
+de readiness para staging/producao. Nao existe deploy publico.
 
 ## Visao geral
 
@@ -68,6 +69,13 @@ server-side e dados isolados por `Organization`.
   as sessoes.
 - Redefinicao assistida por OWNER com link manual, revogavel e de uso unico.
 - Limpeza manual e paginada de dados de seguranca, com modo dry-run.
+- Configuracao de runtime fail-fast para development, test, staging e production.
+- Liveness, readiness com PostgreSQL e identidade de release.
+- Docker standalone multi-stage, runtime non-root e job separado de migrations.
+- Compose local de staging isolado do desenvolvimento.
+- Preflight de deploy e smoke de producao nao destrutivos.
+- Seed demo completo, idempotente, opt-in e proibido em producao.
+- CI de qualidade com PostgreSQL de teste isolado, sem deploy.
 - Desativacao de usuario e revogacao de todas as suas sessoes.
 - Protecao transacional do ultimo OWNER ativo.
 - DTO publico minimo, separado dos DTOs internos.
@@ -93,7 +101,7 @@ server-side e dados isolados por `Organization`.
 | Dashboard | Nao implementado | A pagina interna atual e uma area de operacao com links. |
 | E-mail/WhatsApp | Nao implementado | O envio do orcamento e apenas registro logico. |
 | PDF/pagamento | Nao implementado | Fora do escopo do MVP atual. |
-| Deploy/CI | Nao implementado | Projeto validado localmente. |
+| Deploy/CI | Readiness implementada | Docker, staging local, preflight, smoke e CI; nenhum deploy publico executado. |
 
 ## Destaques tecnicos
 
@@ -120,6 +128,12 @@ server-side e dados isolados por `Organization`.
 - Troca e redefinicao de senha revogam todas as sessoes do usuario.
 - Cleanup de sessoes, convites, tokens, contadores e auditoria em lotes
   configuraveis.
+- Validacao central de runtime para banco, URL-base, release, proxy, origins,
+  stores persistentes, retencoes e cookies seguros.
+- `/api/health/live` sem dependencias e `/api/health/ready` com consulta
+  PostgreSQL limitada por timeout.
+- Imagem standalone multi-stage non-root e migrations fora do startup web.
+- Smoke somente com GET, sem autenticacao, mutacao ou leitura de dados internos.
 - Sessao revalida User ativo e Organization persistida a cada contexto.
 - Lock transacional da Organization para proteger o ultimo OWNER ativo.
 - Headers HTTP de seguranca com CSP inicial e HSTS somente em producao.
@@ -132,7 +146,7 @@ server-side e dados isolados por `Organization`.
 
 Versoes reais registradas em `package.json` e `package-lock.json`:
 
-- Next.js 16.2.10
+- Next.js 16.2.12
 - React 19.1.0
 - TypeScript 5.8.3
 - Tailwind CSS 3.4.17
@@ -156,6 +170,8 @@ O projeto usa Next.js App Router e uma separacao simples em camadas:
 - `src/server/services`: casos de uso server-side.
 - `src/server/security`: cabecalhos, rate limiting, auditoria e validacao de
   configuracao de seguranca.
+- `src/server/runtime`: validacao central de ambiente e identidade de release.
+- `src/server/operations`: health, preflight de deploy e smoke operacional.
 - `prisma`: schema, migrations e seed.
 - `tests`: testes automatizados.
 - `docs`: documentacao tecnica e de portfolio.
@@ -402,6 +418,11 @@ DATABASE_URL="postgresql://fixflow_dev:fixflow_dev_password@localhost:5432/fixfl
 FIXFLOW_TEST_DATABASE_URL=""
 
 FIXFLOW_APP_ENV="development"
+FIXFLOW_APP_BASE_URL="http://localhost:3000"
+FIXFLOW_RELEASE_SHA="development"
+FIXFLOW_TRUST_PROXY="false"
+FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS="localhost:3000"
+FIXFLOW_READINESS_TIMEOUT_MS="2000"
 FIXFLOW_RATE_LIMIT_STORE="memory"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT="5"
 FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS="300"
@@ -440,6 +461,32 @@ Nao use secrets reais no repositorio. O arquivo `.env.example` deve permanecer
 apenas como modelo. A store `memory` de rate limit e somente para
 desenvolvimento/testes; producao deve configurar `FIXFLOW_RATE_LIMIT_STORE` como
 `database`.
+
+Staging e producao exigem configuracao explicita e stores persistentes.
+Producao exige URL-base HTTPS. Consulte `.env.staging.example`,
+`docs/deployment.md` e `docs/production-readiness-checklist.md`; nunca copie
+placeholders ou credenciais de exemplo para um ambiente real.
+
+## Health, deploy check e smoke
+
+```text
+GET /api/health/live
+GET /api/health/ready
+```
+
+Liveness testa somente o processo. Readiness testa configuracao e uma consulta
+minima ao PostgreSQL com timeout e retorna `503` seguro em falha. Ambos
+identificam versao e `FIXFLOW_RELEASE_SHA`.
+
+Depois de migrations versionadas em ambiente controlado:
+
+```powershell
+npm.cmd run deploy:check
+npm.cmd run smoke:production -- --base-url https://target.example
+```
+
+Os dois comandos sao nao destrutivos. O preflight nao aplica migrations; o
+smoke usa somente GETs anonimos.
 
 ## Usuario de desenvolvimento
 
@@ -481,7 +528,10 @@ Scripts reais do `package.json`:
 | `npm run test:watch` | Executa Vitest em modo watch. |
 | `npm run security:cleanup -- --dry-run` | Conta registros elegiveis sem excluir. |
 | `npm run security:cleanup` | Exclui dados de seguranca elegiveis em lotes. |
+| `npm run deploy:check` | Valida runtime, Prisma, migrations, banco e stores sem escrever. |
+| `npm run smoke:production -- --base-url <url>` | Executa smoke anonimo somente-leitura. |
 | `npm run db:seed` | Executa o seed de desenvolvimento. |
+| `npm run db:seed:demo` | Seed demo idempotente, opt-in e proibido em producao. |
 | `npm run prisma:generate` | Gera Prisma Client. |
 | `npm run prisma:migrate` | Executa `prisma migrate dev`. |
 | `npm run prisma:validate` | Valida o schema Prisma. |
@@ -548,6 +598,11 @@ docs/
 - `docs/portfolio.md`
 - `docs/manual-qa.md`
 - `docs/local-development.md`
+- `docs/staging.md`
+- `docs/deployment.md`
+- `docs/production-readiness-checklist.md`
+- `docs/operations-runbook.md`
+- `docs/backup-restore.md`
 - `docs/linkedin-post.md`
 
 ## Roadmap
@@ -562,6 +617,8 @@ Implementado:
 - base de seguranca com headers, rate limiting e auditoria;
 - gestao de usuarios, convites manuais e sessoes;
 - alteracao de senha, redefinicao assistida e cleanup manual de seguranca.
+- readiness para staging/producao, Docker seguro, CI, preflight, smoke e
+  documentacao operacional.
 
 Proximos passos possiveis:
 
@@ -569,8 +626,6 @@ Proximos passos possiveis:
 - envio externo controlado do link publico;
 - observabilidade e alertas;
 - agendamento externo e observabilidade do cleanup de seguranca;
-- deploy;
-- CI;
 - testes E2E;
 - melhorias visuais;
 - hardening de producao;
@@ -580,12 +635,12 @@ Nao ha datas prometidas para esses itens.
 
 ## Limitacoes atuais
 
-- Sem deploy publico.
+- Sem deploy publico ou provedor de infraestrutura configurado.
 - Sem envio real de email, WhatsApp ou SMS.
 - Sem PDF.
 - Sem pagamento.
 - Sem WAF, CAPTCHA ou observabilidade de producao.
-- Sem CI/CD.
+- CI valida qualidade e PostgreSQL; nao existe CD nem deploy automatico.
 - Sem testes E2E.
 - Sem dashboard funcional.
 - Convites precisam ser compartilhados manualmente pelo OWNER.
@@ -594,7 +649,8 @@ Nao ha datas prometidas para esses itens.
   unico OWNER fica fora desta fase.
 - O cleanup existe como comando manual; nao ha scheduler embutido.
 - Portal publico baseado em `publicCode` como capability URL.
-- Docker Compose fornece PostgreSQL local; nao e um setup completo de producao.
+- O Compose de staging e local e nao substitui infraestrutura gerenciada,
+  observabilidade, TLS de borda ou operacao real.
 
 Esses pontos representam o escopo atual do MVP, nao funcionalidades simuladas.
 

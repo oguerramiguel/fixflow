@@ -22,6 +22,8 @@ dados sem criar abstracoes prematuras.
   repositories de acesso a dados futuros.
 - `src/server/security`: cabecalhos HTTP, rate limiting, auditoria de
   seguranca, hashing de identificadores sensiveis e validacao de configuracao.
+- `src/server/runtime`: configuracao central e identidade de release.
+- `src/server/operations`: health, preflight e smoke operacional.
 - `prisma`: schema, enums, relacionamentos e migrations.
 - `docs`: decisoes tecnicas e regras que precisam sobreviver entre tarefas.
 
@@ -594,13 +596,42 @@ foi implementado nesta fase para manter o escopo controlado.
 - Envio, aprovacao e rejeicao de Quote coordenam Quote, ServiceOrder e timeline
   atomicamente.
 - Valores monetarios usam `Decimal @db.Decimal(12, 2)`.
-- Docker Compose fornece PostgreSQL local; a app roda via npm nesta fase.
+- Docker Compose de desenvolvimento fornece PostgreSQL local; staging usa
+  Compose separado com web standalone e migration one-shot.
 - A store em memoria de rate limit e permitida somente para desenvolvimento e
   testes. Producao deve usar PostgreSQL/Prisma.
 - Auditoria de seguranca registra eventos minimizados e nao bloqueia operacoes
   legitimas quando a escrita de log falha.
 - Cleanup de seguranca e um comando manual, paginado, idempotente e com dry-run;
   seu agendamento pertence ao ambiente operacional.
+
+## Readiness operacional da Fase 9A
+
+`src/instrumentation.ts` valida a configuracao quando o runtime Node inicia.
+Staging usa `NODE_ENV=production` com `FIXFLOW_APP_ENV=staging`, recebendo os
+mesmos requisitos de store persistente, auditoria, retencao e cookie seguro de
+producao. O build nao recebe secrets.
+
+Liveness nao consulta dependencias. Readiness executa somente `SELECT 1` com
+timeout e converte falha em `unavailable`, sem propagar erro Prisma. A
+identidade publica contem apenas versao e release.
+
+```mermaid
+flowchart LR
+  Build["Build imutavel"] --> Migrate["Migration one-shot"]
+  Migrate --> Preflight["Deploy check read-only"]
+  Preflight --> Web["Web non-root"]
+  Web --> Ready["Readiness"]
+  Ready --> Smoke["Smoke GET-only"]
+```
+
+O alvo Docker `runner` contem o standalone. O alvo `migration` contem Prisma,
+migrations e scripts operacionais. Web depende do job bem-sucedido e
+PostgreSQL permanece na rede interna do staging local.
+
+Cabecalhos encaminhados so participam do rate limit quando
+`FIXFLOW_TRUST_PROXY=true` e um proxy confiavel os sobrescreve. Allowed origins
+aceita apenas hosts exatos, sem esquema, caminho ou wildcard.
 
 ## Evolucoes futuras
 
@@ -612,4 +643,4 @@ foi implementado nesta fase para manter o escopo controlado.
 - Row Level Security;
 - melhorias do portal publico e envio externo do link;
 - observabilidade de seguranca e alertas;
-- CI com execucao dos testes de integracao em PostgreSQL separado.
+- CD e infraestrutura real de staging/producao.

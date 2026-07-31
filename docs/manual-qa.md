@@ -203,6 +203,23 @@ screenshots, gravar uma demonstracao ou abrir uma release.
 - [ ] `npx prisma generate`
 - [ ] `git diff --check`
 
+## Readiness de staging
+
+- [ ] `.env.staging` foi criado fora do Git e nao contem placeholders.
+- [ ] PostgreSQL de staging nao publica porta no host.
+- [ ] Migration one-shot conclui antes de web iniciar.
+- [ ] Nenhum seed roda automaticamente.
+- [ ] `/api/health/live` retorna 200 sem depender do banco.
+- [ ] `/api/health/ready` retorna 200 com banco e 503 seguro sem banco.
+- [ ] Health identifica a release e nao mostra URL de banco ou stack.
+- [ ] `npm run deploy:check` nao altera dados e confirma migrations.
+- [ ] `npm run smoke:production` usa somente GET.
+- [ ] Container web executa como usuario non-root.
+- [ ] Trusted proxy corresponde ao caminho real de trafego.
+- [ ] Allowed origins nao usa wildcard.
+- [ ] Demo seed permanece desabilitado salvo acao isolada e aprovada.
+- [ ] `docs/production-readiness-checklist.md` foi revisado.
+
 ## Revisao final
 
 - [ ] README menciona apenas funcionalidades existentes.

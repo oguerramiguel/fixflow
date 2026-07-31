@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
 import { hashSecurityValue } from "@/server/security/security-hash";
+import { getRuntimeConfig } from "@/server/runtime/runtime-config";
 
 export type SecurityRequestOriginInput = {
   forwardedFor?: string | null;
   realIp?: string | null;
   userAgent?: string | null;
+  trustProxy?: boolean;
 };
 
 export type SecurityRequestOrigin = {
@@ -33,8 +35,10 @@ export function createSecurityRequestOrigin(
   input: SecurityRequestOriginInput
 ): SecurityRequestOrigin {
   const forwardedAddress =
-    getFirstForwardedAddress(input.forwardedFor) ??
-    normalizeHeaderValue(input.realIp);
+    input.trustProxy === true
+      ? getFirstForwardedAddress(input.forwardedFor) ??
+        normalizeHeaderValue(input.realIp)
+      : null;
   const userAgent = normalizeHeaderValue(input.userAgent);
   const originBasis = [
     forwardedAddress ?? "unknown-address",
@@ -52,10 +56,12 @@ export function createSecurityRequestOrigin(
 
 export async function getSecurityRequestOrigin(): Promise<SecurityRequestOrigin> {
   const headerStore = await headers();
+  const config = getRuntimeConfig();
 
   return createSecurityRequestOrigin({
     forwardedFor: headerStore.get("x-forwarded-for"),
     realIp: headerStore.get("x-real-ip"),
-    userAgent: headerStore.get("user-agent")
+    userAgent: headerStore.get("user-agent"),
+    trustProxy: config.trustProxy
   });
 }

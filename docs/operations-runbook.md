@@ -22,6 +22,14 @@ running FixFlow:
 Never start multiple migration jobs, and never attach migration execution to
 every web replica.
 
+On Render, the Blueprint runs migration and deploy check exactly once as a
+single pre-deploy command. Automatic deploy remains disabled as a release gate.
+
+Create the first pilot tenant with `npm run pilot:provision`: execute dry-run
+first, then the real command only in an interactive ephemeral SSH session. The
+one-time setup link goes directly to the terminal, not service stdout. Never
+pipe, redirect or record that session.
+
 ## Smoke failure
 
 Stop rollout expansion. Preserve command output without request bodies,

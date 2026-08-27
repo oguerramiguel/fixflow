@@ -81,6 +81,10 @@ server-side e dados isolados por `Organization`.
 - DTO publico minimo, separado dos DTOs internos.
 - Isolamento por tenant em services e repositories.
 - Testes automatizados de dominio, services, repositories, actions e APIs.
+- Provisionamento administrativo transacional da primeira Organization piloto,
+  OWNER e convite de configuracao, com dry-run e sem senha temporaria.
+- Blueprint Render preparada para staging controlado, sem afirmar que deploy ou
+  contratacao de recursos foram realizados.
 
 ## Matriz de funcionalidades
 
@@ -528,6 +532,8 @@ Scripts reais do `package.json`:
 | `npm run test:watch` | Executa Vitest em modo watch. |
 | `npm run security:cleanup -- --dry-run` | Conta registros elegiveis sem excluir. |
 | `npm run security:cleanup` | Exclui dados de seguranca elegiveis em lotes. |
+| `npm run pilot:provision -- ... --dry-run` | Valida o provisionamento inicial sem gerar token ou gravar dados. |
+| `npm run pilot:provision -- ...` | Provisiona o primeiro tenant; exige terminal interativo seguro. |
 | `npm run deploy:check` | Valida runtime, Prisma, migrations, banco e stores sem escrever. |
 | `npm run smoke:production -- --base-url <url>` | Executa smoke anonimo somente-leitura. |
 | `npm run db:seed` | Executa o seed de desenvolvimento. |
@@ -603,6 +609,7 @@ docs/
 - `docs/production-readiness-checklist.md`
 - `docs/operations-runbook.md`
 - `docs/backup-restore.md`
+- `docs/phase-9b-pilot-readiness.md`
 - `docs/linkedin-post.md`
 
 ## Roadmap
@@ -635,7 +642,8 @@ Nao ha datas prometidas para esses itens.
 
 ## Limitacoes atuais
 
-- Sem deploy publico ou provedor de infraestrutura configurado.
+- Sem deploy publico; Render esta apenas declarado no repositorio e ainda exige
+  conta, billing, aplicacao da Blueprint e operacao autorizada.
 - Sem envio real de email, WhatsApp ou SMS.
 - Sem PDF.
 - Sem pagamento.
@@ -651,6 +659,8 @@ Nao ha datas prometidas para esses itens.
 - Portal publico baseado em `publicCode` como capability URL.
 - O Compose de staging e local e nao substitui infraestrutura gerenciada,
   observabilidade, TLS de borda ou operacao real.
+- Backup/restore, dominio, monitoramento e dados ficticios do piloto ainda
+  dependem de execucao manual autorizada.
 
 Esses pontos representam o escopo atual do MVP, nao funcionalidades simuladas.
 

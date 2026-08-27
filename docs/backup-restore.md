@@ -98,3 +98,9 @@ placeholders until real values are approved:
 - RTO: `<APPROVED_RTO>`;
 - backup retention: `<APPROVED_BACKUP_RETENTION>`;
 - restore-test cadence: `<APPROVED_RESTORE_TEST_CADENCE>`.
+
+Phase 9B selects Render PostgreSQL for staging. Paid recovery and a restore into
+a separate disposable database are required before pilot use, but neither is
+enabled or rehearsed by repository changes. Keep the database private and
+record recovery point, duration and integrity evidence without credentials or
+customer data.

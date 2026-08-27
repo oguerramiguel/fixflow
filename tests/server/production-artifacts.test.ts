@@ -29,6 +29,27 @@ describe("production readiness artifacts", () => {
     expect(compose).not.toContain("db:seed");
   });
 
+  it("defines a manual Render staging release with one pre-deploy migration", async () => {
+    const blueprint = await readFile("render.yaml", "utf8");
+    const dockerfile = await readFile("Dockerfile", "utf8");
+
+    expect(blueprint).toContain("runtime: docker");
+    expect(blueprint).toContain("autoDeployTrigger: off");
+    expect(blueprint).toContain(
+      "preDeployCommand: npm run prisma:migrate:deploy && FIXFLOW_RELEASE_SHA=$RENDER_GIT_COMMIT npm run deploy:check"
+    );
+    expect(blueprint).toContain("healthCheckPath: /api/health/ready");
+    expect(blueprint).toContain("property: connectionString");
+    expect(blueprint).toContain("FIXFLOW_RATE_LIMIT_STORE");
+    expect(blueprint).toContain("FIXFLOW_SECURITY_AUDIT_STORE");
+    expect(blueprint).toContain("ipAllowList: []");
+    expect(blueprint).not.toContain("db:seed");
+    expect(blueprint).not.toContain("migrate dev");
+    expect(blueprint).not.toContain("db push");
+    expect(dockerfile).toContain("FROM runner AS render");
+    expect(dockerfile).toContain('CMD ["node", "scripts/render-start.mjs"]');
+  });
+
   it("excludes secrets, backups and development artifacts from Docker", async () => {
     const dockerignore = await readFile(".dockerignore", "utf8");
 

@@ -7,6 +7,10 @@ create infrastructure, publish an image or deploy the application. Runtime
 secrets must be injected by the chosen platform and must never be baked into an
 image.
 
+Phase 9B adds a checked-in Render Blueprint for a controlled public staging
+pilot. It is prepared but has not been applied to an account. See
+`docs/phase-9b-pilot-readiness.md` for the decision and operator steps.
+
 ## Environment matrix
 
 | Environment | `NODE_ENV` | `FIXFLOW_APP_ENV` | Rate limit | Audit | Base URL |
@@ -43,6 +47,13 @@ the platform so only one migration job runs for a release.
   Git metadata, env files or backup artifacts.
 - `migration`: operational image with Prisma CLI, schema, migrations and
   deployment scripts. Its default command is `prisma migrate deploy`.
+- `render`: provider image that extends `runner` with the administrative files
+  required by Render pre-deploy and ephemeral SSH commands.
+
+Render runs migration and `deploy:check` together in one `preDeployCommand`,
+mapping `RENDER_GIT_COMMIT` to `FIXFLOW_RELEASE_SHA`. The runtime entry point
+performs the same mapping before loading the server. No seed is part of this
+path.
 
 Build the web image:
 

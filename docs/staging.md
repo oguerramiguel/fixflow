@@ -1,4 +1,6 @@
-# Local staging
+# Staging
+
+## Local staging
 
 Local staging is separate from the development Compose project. It uses
 `docker-compose.staging.yml`, a distinct named volume, an internal PostgreSQL
@@ -60,3 +62,10 @@ docker compose --env-file .env.staging -f docker-compose.staging.yml down
 
 This command removes containers and networks but does not request volume
 deletion. Do not add `--volumes` unless deletion is separately authorized.
+
+## Public pilot staging
+
+`render.yaml` prepares a paid Render web service and private PostgreSQL database
+for the first controlled pilot. Applying the Blueprint, selecting a paid plan,
+configuring recovery and deploying remain manual operator actions. The complete
+runbook is in `docs/phase-9b-pilot-readiness.md`.

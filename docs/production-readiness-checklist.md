@@ -19,6 +19,9 @@
 - [ ] No `FIXFLOW_BOOTSTRAP_*` variable is present.
 - [ ] `FIXFLOW_DEMO_SEED_ENABLED` is absent or false.
 - [ ] No default, example or shared credential is used.
+- [ ] Staging contains only fictional, manually created demonstration data.
+- [ ] Staging has an exact HTTPS `FIXFLOW_APP_BASE_URL` and a non-wildcard
+      `FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS`.
 
 ## Database and startup
 
@@ -50,3 +53,7 @@ Record without secrets:
 - health status;
 - backup identifier and restore-test date;
 - incident or rollback reference, when applicable.
+
+For the first pilot, redact setup links, tokens, email addresses and internal
+identifiers from logs, screenshots and tickets. Provision its OWNER only in an
+interactive ephemeral SSH session after a successful dry-run.

@@ -78,6 +78,21 @@ comerciais.
 - Cleanup manual, paginado e idempotente para tabelas de seguranca, com
   dry-run e periodos de retencao configuraveis.
 
+## Controles adicionados na Fase 9B
+
+- Provisionamento administrativo cria `Organization`, `OWNER`, convite de
+  configuracao de conta e auditoria na mesma transacao.
+- O comando nao aceita `organizationId`, nao define senha temporaria e persiste
+  apenas o hash do token de convite.
+- O link completo e exibido uma unica vez diretamente em terminal interativo,
+  nunca no stdout do servico; o terminal e aberto antes da escrita no banco.
+- `--dry-run` valida formato e conflitos sem gerar token ou gravar dados.
+- `PILOT_ORGANIZATION_PROVISIONED` registra apenas IDs e metadados operacionais
+  nao sensiveis.
+
+O canal humano usado para entregar o link continua sendo uma dependencia de
+seguranca. Nao redirecione, grave, fotografe ou cole o link em logs e tickets.
+
 ## Modelo basico de ameacas
 
 Principais ameacas consideradas:

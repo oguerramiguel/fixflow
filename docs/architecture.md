@@ -633,6 +633,19 @@ Cabecalhos encaminhados so participam do rate limit quando
 `FIXFLOW_TRUST_PROXY=true` e um proxy confiavel os sobrescreve. Allowed origins
 aceita apenas hosts exatos, sem esquema, caminho ou wildcard.
 
+## Staging controlado da Fase 9B
+
+Render e a decisao atual para o primeiro piloto por oferecer uma Blueprint
+estavel que declara Docker, PostgreSQL privado, pre-deploy e health check no
+repositorio. O estagio Docker `render` preserva o runtime standalone e inclui os
+artefatos administrativos necessarios para pre-deploy e SSH efemero. Migracao e
+deploy check formam um unico gate antes do novo processo.
+
+O provisionamento inicial atravessa domain validation, service e repository. O
+repository cria Organization, OWNER, convite e auditoria na mesma transacao e
+nunca recebe o token bruto. O comando e somente a fronteira operacional segura
+para exibir o link one-time.
+
 ## Evolucoes futuras
 
 - envio de convite ou redefinicao por email e recuperacao autonoma;

@@ -1,0 +1,98 @@
+services:
+  - type: web
+    name: fixflow-staging
+    runtime: docker
+    plan: starter
+    region: virginia
+    branch: main
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node scripts/render-start.mjs
+    preDeployCommand: npm run prisma:migrate:deploy && FIXFLOW_RELEASE_SHA=$RENDER_GIT_COMMIT npm run deploy:check
+    healthCheckPath: /api/health/ready
+    maxShutdownDelaySeconds: 30
+    numInstances: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fixflow-staging-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: FIXFLOW_APP_ENV
+        value: staging
+      - key: FIXFLOW_APP_BASE_URL
+        sync: false
+      - key: FIXFLOW_TRUST_PROXY
+        value: "true"
+      - key: FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS
+        sync: false
+      - key: FIXFLOW_READINESS_TIMEOUT_MS
+        value: "2000"
+      - key: FIXFLOW_RATE_LIMIT_STORE
+        value: database
+      - key: FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_LOGIN_ATTEMPT_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_ACCOUNT_SETUP_ATTEMPT_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_CHANGE_ATTEMPT_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CREATE_WINDOW_SECONDS
+        value: "900"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_PASSWORD_RESET_CONSUME_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_LIMIT
+        value: "60"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_PORTAL_LOOKUP_WINDOW_SECONDS
+        value: "60"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_APPROVE_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_LIMIT
+        value: "5"
+      - key: FIXFLOW_RATE_LIMIT_PUBLIC_QUOTE_REJECT_WINDOW_SECONDS
+        value: "300"
+      - key: FIXFLOW_SECURITY_AUDIT_ENABLED
+        value: "true"
+      - key: FIXFLOW_SECURITY_AUDIT_STORE
+        value: database
+      - key: FIXFLOW_PASSWORD_RESET_TOKEN_TTL_MINUTES
+        value: "30"
+      - key: FIXFLOW_SECURITY_RETENTION_EXPIRED_SESSION_DAYS
+        value: "7"
+      - key: FIXFLOW_SECURITY_RETENTION_CLOSED_INVITATION_DAYS
+        value: "30"
+      - key: FIXFLOW_SECURITY_RETENTION_CLOSED_PASSWORD_RESET_DAYS
+        value: "30"
+      - key: FIXFLOW_SECURITY_RETENTION_RATE_LIMIT_COUNTER_SECONDS
+        value: "86400"
+      - key: FIXFLOW_SECURITY_RETENTION_AUDIT_LOG_DAYS
+        value: "90"
+      - key: FIXFLOW_SECURITY_CLEANUP_BATCH_SIZE
+        value: "500"
+
+databases:
+  - name: fixflow-staging-db
+    plan: basic-256mb
+    diskSizeGB: 5
+    region: virginia
+    postgresMajorVersion: "16"
+    databaseName: fixflow_staging
+    user: fixflow_staging
+    ipAllowList: []
+    connectionPool: none
+    storageAutoscalingEnabled: false

@@ -312,6 +312,14 @@ sequenceDiagram
 - `/app` e `/api/me` devem resolver autenticacao no servidor;
 - logout deve invalidar sessao server-side.
 
+## Primeiro OWNER do piloto
+
+Staging publico nao usa bootstrap ou seed de desenvolvimento. Um operador
+autorizado executa `npm run pilot:provision` em terminal interativo. O comando
+cria o usuario com `passwordHash = null` e um convite one-time na mesma
+transacao; o OWNER escolhe a propria senha pelo fluxo existente de configuracao
+de conta. Nao existe senha temporaria conhecida pelo operador.
+
 ## Limitacoes atuais
 
 - a recuperacao e assistida por OWNER e nao possui solicitacao autonoma;

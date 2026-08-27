@@ -354,6 +354,20 @@ executar deploy real:
 Continuam fora do escopo: provedor, infraestrutura real, CD, dominio publico,
 TLS gerenciado, observabilidade contratada e execucao real de backup/restore.
 
+## Status da Fase 9B
+
+A Fase 9B prepara, mas nao executa, um staging publico controlado:
+
+- RF031: um operador autorizado provisiona Organization, primeiro OWNER e
+  convite de configuracao sem aceitar tenant ID do cliente ou criar senha
+  temporaria;
+- RNF029: o provisionamento inicial e atomico, auditavel, armazena somente o
+  hash do token e nao envia o link one-time aos logs do servico;
+- Render foi escolhido e declarado em `render.yaml` com migracao unica,
+  deploy-check e readiness, sem seed automatico;
+- conta, cobranca, deploy, dominio, restore e dados ficticios permanecem
+  pendencias manuais e nao sao afirmados como executados.
+
 ## Fora do escopo inicial
 
 - cadastro publico de usuarios;

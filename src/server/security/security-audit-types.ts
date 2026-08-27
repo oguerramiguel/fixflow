@@ -16,6 +16,7 @@ export const securityAuditEventTypes = {
   passwordResetTokenRevoked: "PASSWORD_RESET_TOKEN_REVOKED",
   passwordResetCompleted: "PASSWORD_RESET_COMPLETED",
   passwordResetRejected: "PASSWORD_RESET_REJECTED",
+  pilotOrganizationProvisioned: "PILOT_ORGANIZATION_PROVISIONED",
   securityCleanupExecuted: "SECURITY_CLEANUP_EXECUTED",
   publicQuoteApproved: "PUBLIC_QUOTE_APPROVED",
   publicQuoteRejected: "PUBLIC_QUOTE_REJECTED"

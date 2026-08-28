@@ -15,7 +15,7 @@ function InviteSubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-11 items-center justify-center rounded-md bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+      className="button-primary"
     >
       {pending ? "Criando convite..." : "Convidar usuario"}
     </button>
@@ -29,16 +29,16 @@ export function InviteUserForm() {
   >(inviteUserAction, {});
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 className="text-lg font-bold text-slate-950">Novo convite</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
+    <div className="surface-card p-5 sm:p-6">
+      <h3 className="section-title">Novo convite</h3>
+      <p className="mt-2 text-sm leading-6 muted-text">
         O usuario definira a propria senha pelo link gerado. Nenhum email sera
         enviado nesta fase.
       </p>
 
       <form action={formAction} className="mt-5 grid gap-5 md:grid-cols-2">
         <div>
-          <label htmlFor="invite-name" className="text-sm font-medium text-slate-800">
+          <label htmlFor="invite-name" className="form-label">
             Nome
           </label>
           <input
@@ -50,7 +50,7 @@ export function InviteUserForm() {
             maxLength={120}
             defaultValue={state.values?.name}
             aria-describedby="invite-name-error"
-            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+            className="form-input"
           />
           {state.fieldErrors?.name ? (
             <p id="invite-name-error" className="mt-2 text-sm text-red-700">
@@ -62,7 +62,7 @@ export function InviteUserForm() {
         <div>
           <label
             htmlFor="invite-email"
-            className="text-sm font-medium text-slate-800"
+            className="form-label"
           >
             Email
           </label>
@@ -75,7 +75,7 @@ export function InviteUserForm() {
             maxLength={254}
             defaultValue={state.values?.email}
             aria-describedby="invite-email-error"
-            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+            className="form-input"
           />
           {state.fieldErrors?.email ? (
             <p id="invite-email-error" className="mt-2 text-sm text-red-700">
@@ -87,7 +87,7 @@ export function InviteUserForm() {
         <div>
           <label
             htmlFor="invite-role"
-            className="text-sm font-medium text-slate-800"
+            className="form-label"
           >
             Funcao
           </label>
@@ -97,7 +97,7 @@ export function InviteUserForm() {
             required
             defaultValue={state.values?.role ?? "TECHNICIAN"}
             aria-describedby="invite-role-error"
-            className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+            className="form-input"
           >
             <option value="OWNER">Proprietario</option>
             <option value="ADMIN">Administrador</option>
@@ -118,7 +118,7 @@ export function InviteUserForm() {
       {state.error ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="alert-error mt-4"
         >
           {state.error}
         </p>
@@ -127,7 +127,7 @@ export function InviteUserForm() {
       {state.success ? (
         <p
           role="status"
-          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          className="alert-success mt-4"
         >
           {state.success}
         </p>

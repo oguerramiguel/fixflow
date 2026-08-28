@@ -11,6 +11,8 @@ import { getDiagnosticForServiceOrder } from "@/server/services/diagnostic-servi
 import { getServiceOrderDetails } from "@/server/services/service-order-service";
 import { saveDiagnosticAction } from "./actions";
 import { DiagnosticForm } from "./diagnostic-form";
+import { PageHeader } from "@/components/ui/primitives";
+import { ServiceOrderStatusBadge } from "@/components/ui/status-badge";
 
 type DiagnosticPageProps = {
   params: Promise<{
@@ -47,27 +49,10 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
   const action = saveDiagnosticAction.bind(null, serviceOrder.id);
 
   return (
-    <section>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            {serviceOrder.publicCode}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">
-            Diagnostico tecnico
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {serviceOrder.customer.name} - {serviceOrder.equipment.brand}{" "}
-            {serviceOrder.equipment.model}
-          </p>
-        </div>
+    <div className="page-stack">
+      <PageHeader eyebrow={serviceOrder.publicCode} title="Diagnóstico técnico" description={`${serviceOrder.customer.name} · ${serviceOrder.equipment.brand} ${serviceOrder.equipment.model}`} actions={<ServiceOrderStatusBadge status={serviceOrder.status} label={formatServiceOrderStatus(serviceOrder.status)} />} />
 
-        <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800">
-          {formatServiceOrderStatus(serviceOrder.status)}
-        </span>
-      </div>
-
-      <dl className="mt-8 grid gap-5 rounded-lg border border-slate-200 bg-white p-5 md:grid-cols-2">
+      <dl className="surface-card grid gap-5 p-5 md:grid-cols-2 sm:p-6">
         <div>
           <dt className="text-sm font-medium text-slate-500">Cliente</dt>
           <dd className="mt-1 text-base font-semibold text-slate-950">
@@ -91,7 +76,7 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
         </div>
       </dl>
 
-      <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5">
+      <div className="surface-card p-5 sm:p-6">
         {canEdit ? (
           <DiagnosticForm
             action={action}
@@ -137,11 +122,11 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
       <div className="mt-6">
         <Link
           href={`/app/service-orders/${serviceOrder.id}`}
-          className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          className="text-link"
         >
           Voltar para ordem de servico
         </Link>
       </div>
-    </section>
+    </div>
   );
 }

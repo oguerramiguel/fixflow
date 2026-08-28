@@ -46,10 +46,10 @@ function SubmitButton({
   const { pending } = useFormStatus();
   const className =
     variant === "danger"
-      ? "inline-flex min-h-10 items-center justify-center rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      ? "button-danger min-h-10 px-3"
       : variant === "primary"
-        ? "inline-flex min-h-10 items-center justify-center rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
-        : "inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
+        ? "button-primary min-h-10 px-3"
+        : "button-secondary min-h-10 px-3";
 
   return (
     <button type="submit" disabled={pending} className={className}>
@@ -63,7 +63,7 @@ function ActionFeedback({ state }: { state: UserManagementActionState }) {
     return (
       <p
         role="alert"
-        className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        className="alert-error mt-2"
       >
         {state.error}
       </p>
@@ -73,7 +73,7 @@ function ActionFeedback({ state }: { state: UserManagementActionState }) {
   return state.success ? (
     <p
       role="status"
-      className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+      className="alert-success mt-2"
     >
       {state.success}
     </p>
@@ -104,7 +104,7 @@ function RoleForm({
           id={fieldId}
           name="role"
           defaultValue={currentRole}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          className="form-input mt-0 min-h-10 py-0 text-sm"
         >
           <option value="OWNER">Proprietario</option>
           <option value="ADMIN">Administrador</option>

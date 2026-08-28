@@ -26,8 +26,8 @@ function DecisionSubmitButton({
   const { pending } = useFormStatus();
   const className =
     variant === "reject"
-      ? "inline-flex min-h-11 items-center justify-center rounded-md border border-red-300 bg-white px-5 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-      : "inline-flex min-h-11 items-center justify-center rounded-md bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400";
+      ? "button-danger w-full sm:w-auto"
+      : "button-primary w-full sm:w-auto";
 
   return (
     <button type="submit" disabled={pending} className={className}>
@@ -54,7 +54,7 @@ function DecisionForm({
       {state.error ? (
         <p
           role="alert"
-          className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="alert-error mb-3"
         >
           {state.error}
         </p>
@@ -74,19 +74,19 @@ export function PublicQuoteDecisionForm({
 }: PublicQuoteDecisionFormProps) {
   return (
     <div>
-      <p className="text-sm leading-6 text-slate-600">
-        Esta acao registrara sua decisao sobre o orcamento.
+      <p className="text-sm leading-6 muted-text">
+        Esta ação registrará sua decisão sobre o orçamento.
       </p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
         <DecisionForm
           action={approveAction}
-          label="Aprovar orcamento"
+          label="Aprovar orçamento"
           pendingLabel="Aprovando..."
           variant="approve"
         />
         <DecisionForm
           action={rejectAction}
-          label="Rejeitar orcamento"
+          label="Rejeitar orçamento"
           pendingLabel="Rejeitando..."
           variant="reject"
         />

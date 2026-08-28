@@ -4,10 +4,341 @@
 
 :root {
   color-scheme: light;
+  --color-canvas: #f5f7fb;
+  --color-canvas-subtle: #eef2f7;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-text: #172033;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-brand: #2563eb;
+  --color-brand-strong: #1d4ed8;
+  --color-brand-soft: #eff6ff;
+  --focus-ring: rgb(37 99 235 / 0.28);
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 32px rgb(15 23 42 / 0.055);
+  --shadow-lift: 0 18px 48px rgb(15 23 42 / 0.12);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #0f131c;
+  --color-canvas-subtle: #131924;
+  --color-surface: #171e2b;
+  --color-surface-raised: #1b2433;
+  --color-surface-muted: #111824;
+  --color-text: #edf2f8;
+  --color-text-muted: #a4b0c1;
+  --color-text-subtle: #758399;
+  --color-border: #293446;
+  --color-border-strong: #3a475c;
+  --color-brand: #60a5fa;
+  --color-brand-strong: #93c5fd;
+  --color-brand-soft: rgb(37 99 235 / 0.15);
+  --focus-ring: rgb(96 165 250 / 0.3);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 42px rgb(0 0 0 / 0.18);
+  --shadow-lift: 0 22px 54px rgb(0 0 0 / 0.35);
+}
+
+* {
+  border-color: var(--color-border);
 }
 
 body {
   min-height: 100vh;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(37 99 235 / 0.2);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .page-stack {
+    @apply space-y-6 sm:space-y-8;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .page-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.16em] text-brand-600 dark:text-brand-400;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold tracking-[-0.025em] sm:text-3xl;
+    color: var(--color-text);
+  }
+
+  .page-description {
+    @apply mt-2 max-w-3xl text-sm leading-6 sm:text-base;
+    color: var(--color-text-muted);
+  }
+
+  .surface-card {
+    @apply rounded-2xl border;
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .surface-card-muted {
+    @apply rounded-2xl border;
+    background: var(--color-surface-muted);
+    border-color: var(--color-border);
+  }
+
+  .button-base {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button-primary {
+    @apply button-base bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:translate-y-px dark:bg-brand-500 dark:hover:bg-brand-400;
+  }
+
+  .button-secondary {
+    @apply button-base border;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+  }
+
+  .button-secondary:hover {
+    background: var(--color-surface-muted);
+    border-color: var(--color-brand);
+  }
+
+  .button-ghost {
+    @apply button-base;
+    color: var(--color-text-muted);
+  }
+
+  .button-ghost:hover {
+    color: var(--color-text);
+    background: var(--color-surface-muted);
+  }
+
+  .button-danger {
+    @apply button-base border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50;
+  }
+
+  .icon-button {
+    @apply inline-flex size-11 shrink-0 items-center justify-center rounded-xl border transition;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  .icon-button:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-muted);
+  }
+
+  .form-label {
+    @apply block text-sm font-semibold;
+    color: var(--color-text);
+  }
+
+  .form-input {
+    @apply mt-2 block min-h-11 w-full rounded-xl border px-3.5 text-base shadow-sm outline-none transition placeholder:text-slate-400;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+  }
+
+  .form-input:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 4px var(--focus-ring);
+  }
+
+  .form-hint {
+    @apply mt-2 text-sm leading-5;
+    color: var(--color-text-muted);
+  }
+
+  .alert-error {
+    @apply rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300;
+  }
+
+  .alert-success {
+    @apply rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300;
+  }
+
+  .alert-warning {
+    @apply rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-200;
+  }
+
+  .data-table-wrap {
+    @apply overflow-hidden rounded-2xl border;
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .data-table {
+    @apply min-w-full;
+  }
+
+  .data-table thead {
+    background: var(--color-surface-muted);
+  }
+
+  .data-table th {
+    @apply px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em];
+    color: var(--color-text-muted);
+  }
+
+  .data-table tbody {
+    @apply divide-y;
+    border-color: var(--color-border);
+  }
+
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--color-surface-muted);
+  }
+
+  .data-table td {
+    @apply px-5 py-4 align-middle text-sm;
+    color: var(--color-text-muted);
+  }
+
+  .text-link {
+    @apply rounded font-semibold text-brand-600 transition hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300;
+  }
+
+  .empty-state {
+    @apply flex min-h-48 flex-col items-center justify-center px-6 py-10 text-center;
+  }
+
+  .section-title {
+    @apply text-lg font-bold tracking-[-0.015em] sm:text-xl;
+    color: var(--color-text);
+  }
+
+  .muted-text {
+    color: var(--color-text-muted);
+  }
+}
+
+/* Legacy utility colors remain readable while screens migrate to tokens. */
+:root[data-theme="dark"] .bg-white {
+  background-color: var(--color-surface);
+}
+
+:root[data-theme="dark"] .bg-slate-50,
+:root[data-theme="dark"] .bg-slate-100 {
+  background-color: var(--color-surface-muted);
+}
+
+:root[data-theme="dark"] .text-slate-950,
+:root[data-theme="dark"] .text-slate-900,
+:root[data-theme="dark"] .text-slate-800 {
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .text-slate-700,
+:root[data-theme="dark"] .text-slate-600,
+:root[data-theme="dark"] .text-slate-500 {
+  color: var(--color-text-muted);
+}
+
+:root[data-theme="dark"] .border-slate-200,
+:root[data-theme="dark"] .border-slate-300,
+:root[data-theme="dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border);
+}
+
+/* Shared treatment for legacy route forms and cards during the visual migration. */
+.app-content input[type="text"],
+.app-content input[type="email"],
+.app-content input[type="password"],
+.app-content input[type="search"],
+.app-content input[type="tel"],
+.app-content input[type="number"],
+.app-content select,
+.app-content textarea {
+  border-radius: 0.75rem;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.app-content input[type="text"]:focus,
+.app-content input[type="email"]:focus,
+.app-content input[type="password"]:focus,
+.app-content input[type="search"]:focus,
+.app-content input[type="tel"]:focus,
+.app-content input[type="number"]:focus,
+.app-content select:focus,
+.app-content textarea:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.app-content .rounded-lg.border.bg-white {
+  border-radius: 1rem;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+html .bg-slate-950 {
+  background-color: #2563eb;
+}
+
+html .hover\:bg-slate-800:hover {
+  background-color: #1d4ed8;
+}
+
+html .text-emerald-700 {
+  color: var(--color-brand);
+}
+
+html .hover\:text-emerald-700:hover,
+html .hover\:text-emerald-900:hover {
+  color: var(--color-brand-strong);
+}
+
+html .focus\:border-emerald-600:focus {
+  border-color: var(--color-brand);
+}
+
+html .focus\:ring-emerald-600:focus,
+html .focus\:ring-emerald-600\/20:focus {
+  --tw-ring-color: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

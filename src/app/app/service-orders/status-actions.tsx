@@ -31,8 +31,8 @@ function SubmitButton({
   const { pending } = useFormStatus();
   const className =
     variant === "danger"
-      ? "inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-      : "inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400";
+      ? "button-danger min-h-10"
+      : "button-primary min-h-10";
 
   return (
     <button type="submit" disabled={pending} className={className}>
@@ -52,12 +52,13 @@ export function ServiceOrderStatusActions({
   }
 
   return (
-    <section className="mt-8">
-      <h3 className="text-xl font-bold text-slate-950">Acoes de status</h3>
+    <section className="surface-card p-5 sm:p-6">
+      <h2 className="section-title">Próximas etapas</h2>
+      <p className="mt-1 text-sm muted-text">Avance o atendimento conforme o fluxo permitido.</p>
       {state.error ? (
         <p
           role="alert"
-          className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="alert-error mt-3"
         >
           {state.error}
         </p>

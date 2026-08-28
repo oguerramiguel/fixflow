@@ -16,7 +16,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400"
+      className="button-primary mt-2 w-full"
     >
       {pending ? "Entrando..." : "Entrar"}
     </button>
@@ -27,11 +27,11 @@ export function LoginForm() {
   const [state, formAction] = useActionState(loginAction, initialState);
 
   return (
-    <form action={formAction} className="mt-8 space-y-5">
+    <form action={formAction} className="mt-9 space-y-5">
       <div>
         <label
           htmlFor="email"
-          className="block text-sm font-medium text-slate-800"
+          className="form-label"
         >
           Email
         </label>
@@ -41,14 +41,15 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           required
-          className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          placeholder="voce@empresa.com"
+          className="form-input"
         />
       </div>
 
       <div>
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-slate-800"
+          className="form-label"
         >
           Senha
         </label>
@@ -60,14 +61,15 @@ export function LoginForm() {
           required
           minLength={12}
           maxLength={64}
-          className="mt-2 block h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
+          placeholder="Sua senha"
+          className="form-input"
         />
       </div>
 
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="alert-error"
         >
           {state.error}
         </p>

@@ -11,6 +11,8 @@ dados sem criar abstracoes prematuras.
 
 - `src/app`: rotas, paginas, layouts e handlers HTTP do Next.js.
 - `src/components`: componentes React de apresentacao.
+- `src/components/ui`: design system, shell responsivo, tema, badges e
+  primitives visuais sem regras de negocio.
 - `src/lib`: configuracoes e utilitarios compartilhados.
 - `src/domain/entities`: tipos e conceitos centrais do dominio.
 - `src/domain/services`: regras de negocio puras e testaveis.
@@ -399,6 +401,8 @@ concretos e foram ampliados na Fase 4:
   AuthSession.
 - `security-cleanup-repository`: contagem e delete paginado somente das tabelas
   de seguranca elegiveis por retencao.
+- `dashboard-repository`: agregacoes read-only de Customer, Equipment,
+  ServiceOrder e Quote, sempre filtradas pelo `organizationId` do contexto.
 
 Eles exigem `TenantContext` e nao oferecem APIs de busca por Customer ou
 Equipment usando apenas o ID da entidade. O repository de ServiceOrder tambem
@@ -567,6 +571,10 @@ foi implementado nesta fase para manter o escopo controlado.
 ## Decisoes atuais
 
 - Next.js App Router sera a camada web.
+- O azul FixFlow `#2563eb` e a acao primaria; verde fica reservado para sucesso.
+- Tema claro/escuro usa tokens CSS sem dependencia de componentes externa.
+- Graficos administrativos atuais usam HTML/CSS acessivel, sem biblioteca de
+  graficos, e exibem somente agregacoes reais tenant-aware.
 - PostgreSQL e o banco principal.
 - Prisma e o ORM.
 - `Organization` representa o tenant.

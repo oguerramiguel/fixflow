@@ -22,6 +22,8 @@ import {
 } from "./actions";
 import { QuoteCommandForm } from "./quote-command-forms";
 import { QuoteItemForm } from "./quote-item-form";
+import { PageHeader } from "@/components/ui/primitives";
+import { ServiceOrderStatusBadge } from "@/components/ui/status-badge";
 
 type QuotePageProps = {
   params: Promise<{
@@ -67,27 +69,10 @@ export default async function QuotePage({ params }: QuotePageProps) {
   const rejectAction = rejectQuoteAction.bind(null, serviceOrder.id);
 
   return (
-    <section>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            {serviceOrder.publicCode}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">
-            Orcamento
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {serviceOrder.customer.name} - {serviceOrder.equipment.brand}{" "}
-            {serviceOrder.equipment.model}
-          </p>
-        </div>
+    <div className="page-stack">
+      <PageHeader eyebrow={serviceOrder.publicCode} title="Orçamento" description={`${serviceOrder.customer.name} · ${serviceOrder.equipment.brand} ${serviceOrder.equipment.model}`} actions={<ServiceOrderStatusBadge status={serviceOrder.status} label={formatServiceOrderStatus(serviceOrder.status)} />} />
 
-        <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800">
-          {formatServiceOrderStatus(serviceOrder.status)}
-        </span>
-      </div>
-
-      <dl className="mt-8 grid gap-5 rounded-lg border border-slate-200 bg-white p-5 md:grid-cols-2">
+      <dl className="surface-card grid gap-5 p-5 md:grid-cols-2 sm:p-6">
         <div>
           <dt className="text-sm font-medium text-slate-500">Cliente</dt>
           <dd className="mt-1 text-base font-semibold text-slate-950">
@@ -110,7 +95,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
       </dl>
 
       {!diagnostic ? (
-        <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-5">
+        <div className="alert-warning p-5">
           <p className="text-sm font-semibold text-amber-900">
             Registre o diagnostico antes de criar o orcamento.
           </p>
@@ -124,7 +109,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
       ) : null}
 
       {diagnostic && !quote ? (
-        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5">
+        <div className="surface-card p-5 sm:p-6">
           <h3 className="text-xl font-bold text-slate-950">
             Orcamento ainda nao criado
           </h3>
@@ -157,15 +142,15 @@ export default async function QuotePage({ params }: QuotePageProps) {
                 </p>
               ) : null}
             </div>
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-right">
-              <p className="text-sm font-medium text-emerald-800">Total</p>
-              <p className="mt-1 text-2xl font-bold text-emerald-950">
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-right dark:border-brand-900/70 dark:bg-brand-950/30">
+              <p className="text-sm font-medium text-brand-700 dark:text-brand-300">Total</p>
+              <p className="mt-1 text-2xl font-bold text-brand-950 dark:text-brand-100">
                 {formatMoneyBRL(quote.total)}
               </p>
             </div>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="data-table-wrap mt-5">
             {quote.items.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200">
@@ -245,7 +230,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
 
           {quote.status === "DRAFT" ? (
             <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_280px]">
-              <div className="rounded-lg border border-slate-200 bg-white p-5">
+              <div className="surface-card p-5">
                 <h4 className="text-lg font-bold text-slate-950">
                   Adicionar item
                 </h4>
@@ -259,7 +244,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
               </div>
 
               {canManageCommercialFlow ? (
-                <div className="rounded-lg border border-slate-200 bg-white p-5">
+                <div className="surface-card p-5">
                   <h4 className="text-lg font-bold text-slate-950">
                     Envio logico
                   </h4>
@@ -280,7 +265,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
           ) : null}
 
           {quote.status === "SENT" && canManageCommercialFlow ? (
-            <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5">
+            <div className="surface-card p-5">
               <h4 className="text-lg font-bold text-slate-950">
                 Decisao do orcamento
               </h4>
@@ -310,6 +295,6 @@ export default async function QuotePage({ params }: QuotePageProps) {
           Voltar para ordem de servico
         </Link>
       </div>
-    </section>
+    </div>
   );
 }

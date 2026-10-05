@@ -5,7 +5,7 @@ export default function NewCustomerPage() {
   return (
     <section className="max-w-3xl">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">Novo cliente</h2>
+        <h1 className="page-title">Novo cliente</h1>
         <p className="mt-2 text-sm text-slate-600">
           Cadastre os dados principais do cliente.
         </p>

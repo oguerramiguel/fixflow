@@ -69,6 +69,28 @@ adicionam biblioteca de graficos.
 - tabelas operacionais possuem alternativa em cards no mobile quando util;
 - `prefers-reduced-motion` reduz animacoes e transicoes globalmente.
 
+## Polimento da Fase 9D
+
+- `Modal`: `dialog.showModal()`, Escape, fundo inerte, bloqueio de rolagem e
+  restauracao de foco ao fechar.
+- `CommandPalette`: carregamento sob demanda, Ctrl/Cmd+K, setas, Enter e
+  combobox/listbox; debounce de 250 ms e cancelamento de requests.
+- `SubmitButton`: pending, disabled e `aria-busy` compartilhados nos formularios
+  operacionais. `ConfirmableForm`: confirmacao para acoes selecionadas.
+- `ActionNotice`: sucessos permitidos e removiveis, sem temporizador. O toast
+  tem superficie opaca para manter a leitura sobre outros textos.
+- `PublicLinkPanel`: URL completa selecionavel, copia, abertura do portal,
+  toast de sucesso e orientacao para copia manual em caso de falha.
+- `PageLoading`: skeletons com movimento condicionado a preferencia do sistema.
+  Erros recuperaveis oferecem nova tentativa.
+- `responsive-data-table`: cards abaixo de 1024 px para dashboard, equipe e
+  orcamento interno; estrutura de tabela e cabecalhos permanecem no DOM.
+- `brand-950`: token usado no fundo do total do orcamento escuro.
+- Paginas operacionais com `h1` e erros dos campos associados por ARIA.
+
+QA: [relatorio da Fase 9D](phase-9d-product-polish.md), com desktop 1440 px,
+tablet 768 px e celulares 390/375 px, nos dois temas.
+
 ## Responsividade
 
 O shell troca a sidebar por drawer abaixo de `1024px`. Listas principais usam

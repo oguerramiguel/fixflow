@@ -35,14 +35,14 @@ export default async function EquipmentDetailsPage({
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-950">
+          <h1 className="page-title">
             {equipment.brand} {equipment.model}
-          </h2>
+          </h1>
           <p className="mt-2 text-sm text-slate-600">
             {formatEquipmentType(equipment.type)} de{" "}
             <Link
               href={`/app/customers/${equipment.customer.id}`}
-              className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              className="font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
             >
               {equipment.customer.name}
             </Link>
@@ -53,13 +53,13 @@ export default async function EquipmentDetailsPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/app/equipment/${equipment.id}/service-orders/new`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            className="button-primary"
           >
-            Abrir ordem de servico
+            Abrir ordem de serviço
           </Link>
           <Link
             href={`/app/equipment/${equipment.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            className="button-secondary"
           >
             Editar equipamento
           </Link>
@@ -81,7 +81,7 @@ export default async function EquipmentDetailsPage({
         </div>
         <div>
           <dt className="text-sm font-medium text-slate-500">
-            Numero de serie
+            Número de série
           </dt>
           <dd className="mt-1 text-base font-semibold text-slate-950">
             {equipment.serialNumber ?? "Nao informado"}
@@ -96,13 +96,13 @@ export default async function EquipmentDetailsPage({
           </dd>
         </div>
         <div className="md:col-span-2">
-          <dt className="text-sm font-medium text-slate-500">Acessorios</dt>
+          <dt className="text-sm font-medium text-slate-500">Acessórios</dt>
           <dd className="mt-1 whitespace-pre-wrap text-base text-slate-950">
             {equipment.accessories ?? "Nao informado"}
           </dd>
         </div>
         <div className="md:col-span-2">
-          <dt className="text-sm font-medium text-slate-500">Observacoes</dt>
+          <dt className="text-sm font-medium text-slate-500">Observações</dt>
           <dd className="mt-1 whitespace-pre-wrap text-base text-slate-950">
             {equipment.notes ?? "Nao informado"}
           </dd>

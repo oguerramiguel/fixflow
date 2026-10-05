@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { QuoteCommandFormState } from "./actions";
+import { ConfirmableForm } from "@/components/ui/confirmable-form";
 
 type QuoteCommandFormAction = (
   previousState: QuoteCommandFormState,
@@ -14,23 +15,26 @@ type QuoteCommandFormProps = {
   label: string;
   pendingLabel: string;
   variant?: "primary" | "secondary" | "danger";
+  confirmation?: string;
+  disabled?: boolean;
 };
 
 function SubmitButton({
   label,
   pendingLabel,
-  variant = "primary"
+  variant = "primary",
+  disabled = false
 }: QuoteCommandFormProps) {
   const { pending } = useFormStatus();
   const className =
     variant === "danger"
-      ? "inline-flex h-10 items-center justify-center rounded-md border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      ? "button-danger"
       : variant === "secondary"
-        ? "inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-        : "inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-400";
+        ? "button-secondary"
+        : "button-primary";
 
   return (
-    <button type="submit" disabled={pending} className={className}>
+    <button type="submit" disabled={pending || disabled} aria-busy={pending} className={className}>
       {pending ? pendingLabel : label}
     </button>
   );
@@ -40,12 +44,14 @@ export function QuoteCommandForm({
   action,
   label,
   pendingLabel,
-  variant = "primary"
+  variant = "primary",
+  confirmation,
+  disabled
 }: QuoteCommandFormProps) {
   const [state, formAction] = useActionState(action, {});
 
   return (
-    <form action={formAction}>
+    <ConfirmableForm action={formAction} confirmation={confirmation}>
       {state.error ? (
         <p
           role="alert"
@@ -59,7 +65,8 @@ export function QuoteCommandForm({
         label={label}
         pendingLabel={pendingLabel}
         variant={variant}
+        disabled={disabled}
       />
-    </form>
+    </ConfirmableForm>
   );
 }

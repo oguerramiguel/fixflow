@@ -67,7 +67,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -112,7 +112,7 @@ textarea {
   }
 
   .button-primary {
-    @apply button-base bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:translate-y-px dark:bg-brand-500 dark:hover:bg-brand-400;
+    @apply button-base bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:translate-y-px dark:bg-brand-600 dark:hover:bg-brand-700;
   }
 
   .button-secondary {
@@ -314,10 +314,6 @@ html .hover\:bg-slate-800:hover {
   background-color: #1d4ed8;
 }
 
-html .text-emerald-700 {
-  color: var(--color-brand);
-}
-
 html .hover\:text-emerald-700:hover,
 html .hover\:text-emerald-900:hover {
   color: var(--color-brand-strong);
@@ -341,4 +337,33 @@ html .focus\:ring-emerald-600\/20:focus {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+.modal-surface {
+  padding: 0;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lift);
+}
+.modal-surface::backdrop { background: rgb(15 23 42 / .6); }
+.modal-palette { width: min(640px, calc(100vw - 24px)); max-width: none; max-height: 85dvh; margin: min(12dvh, 96px) auto auto; border-radius: 1rem; }
+.modal-drawer { width: min(320px, 88vw); max-width: none; height: 100dvh; max-height: none; margin: 0; border-radius: 0 1rem 1rem 0; }
+.skip-link { position: fixed; top: .5rem; left: 1rem; z-index: 100; transform: translateY(-200%); padding: .75rem 1rem; border-radius: .75rem; background: var(--color-surface); color: var(--color-text); }
+.skip-link:focus { transform: translateY(0); }
+.action-notice { position: fixed; bottom: 1rem; right: 1rem; z-index: 45; width: min(480px, calc(100vw - 2rem)); background: var(--color-surface); }
+.app-content :where(p, dd, td, h1, h2, h3) { overflow-wrap: anywhere; }
+.app-content .min-h-10 { min-height: 2.75rem; }
+:root[data-theme="dark"] .text-red-700 { color: #fca5a5; }
+:root[data-theme="dark"] .bg-red-50 { background-color: #3a1c28; }
+:root[data-theme="dark"] .text-amber-900 { color: #fde68a; }
+:root[data-theme="dark"] .text-emerald-700 { color: #6ee7b7; }
+
+@media (max-width: 1023px) {
+  .responsive-data-table, .responsive-data-table tbody, .responsive-data-table tr, .responsive-data-table td { display: block; }
+  .responsive-data-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .responsive-data-table tr { padding: 1rem; }
+  .responsive-data-table td { padding: .35rem 0; }
+  .responsive-data-table td[data-label] { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
+  .responsive-data-table td[data-label]::before { content: attr(data-label); font-weight: 500; color: var(--color-text-muted); }
 }

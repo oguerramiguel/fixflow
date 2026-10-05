@@ -46,9 +46,9 @@ export default async function EditEquipmentPage({
   return (
     <section className="max-w-3xl">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">
+        <h1 className="page-title">
           Editar equipamento
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-600">
           {equipment.brand} {equipment.model}
         </p>
@@ -59,7 +59,7 @@ export default async function EditEquipmentPage({
         mode="update"
         customerName={equipment.customer.name}
         initialValues={initialValues}
-        submitLabel="Salvar alteracoes"
+        submitLabel="Salvar alterações"
         pendingLabel="Salvando..."
         cancelHref={`/app/equipment/${equipment.id}`}
       />

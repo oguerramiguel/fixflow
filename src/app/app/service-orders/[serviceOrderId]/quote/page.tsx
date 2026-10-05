@@ -23,7 +23,7 @@ import {
 import { QuoteCommandForm } from "./quote-command-forms";
 import { QuoteItemForm } from "./quote-item-form";
 import { PageHeader } from "@/components/ui/primitives";
-import { ServiceOrderStatusBadge } from "@/components/ui/status-badge";
+import { QuoteStatusBadge, ServiceOrderStatusBadge } from "@/components/ui/status-badge";
 
 type QuotePageProps = {
   params: Promise<{
@@ -87,9 +87,9 @@ export default async function QuotePage({ params }: QuotePageProps) {
           </dd>
         </div>
         <div className="md:col-span-2">
-          <dt className="text-sm font-medium text-slate-500">Diagnostico</dt>
+          <dt className="text-sm font-medium text-slate-500">Diagnóstico</dt>
           <dd className="mt-1 whitespace-pre-wrap text-base text-slate-950">
-            {diagnostic?.description ?? "Diagnostico ainda nao registrado."}
+            {diagnostic?.description ?? "Diagnóstico ainda não registrado."}
           </dd>
         </div>
       </dl>
@@ -97,13 +97,13 @@ export default async function QuotePage({ params }: QuotePageProps) {
       {!diagnostic ? (
         <div className="alert-warning p-5">
           <p className="text-sm font-semibold text-amber-900">
-            Registre o diagnostico antes de criar o orcamento.
+            Registre o diagnóstico antes de criar o orçamento.
           </p>
           <Link
             href={`/app/service-orders/${serviceOrder.id}/diagnostic`}
             className="mt-3 inline-flex h-10 items-center justify-center rounded-md border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2"
           >
-            Ir para diagnostico
+            Ir para diagnóstico
           </Link>
         </div>
       ) : null}
@@ -111,15 +111,15 @@ export default async function QuotePage({ params }: QuotePageProps) {
       {diagnostic && !quote ? (
         <div className="surface-card p-5 sm:p-6">
           <h3 className="text-xl font-bold text-slate-950">
-            Orcamento ainda nao criado
+            Orçamento ainda não criado
           </h3>
           <p className="mt-2 text-sm text-slate-600">
-            A criacao do rascunho ocorre somente por acao explicita.
+            Crie um rascunho para incluir os serviços e peças. Você poderá revisar os itens antes de disponibilizar o orçamento ao cliente.
           </p>
           <div className="mt-4">
             <QuoteCommandForm
               action={createAction}
-              label="Criar orcamento"
+              label="Criar orçamento"
               pendingLabel="Criando..."
             />
           </div>
@@ -131,14 +131,14 @@ export default async function QuotePage({ params }: QuotePageProps) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-xl font-bold text-slate-950">
-                Itens do orcamento
+                Itens do orçamento
               </h3>
               <p className="mt-2 text-sm text-slate-600">
                 Status: {formatQuoteStatus(quote.status)}.
               </p>
               {quote.status === "SENT" ? (
                 <p className="mt-2 text-sm text-slate-600">
-                  Aguardando registro interno da decisao do cliente.
+                  Aguardando a decisão do cliente pelo portal ou o registro da resposta recebida pela equipe.
                 </p>
               ) : null}
             </div>
@@ -150,20 +150,21 @@ export default async function QuotePage({ params }: QuotePageProps) {
             </div>
           </div>
 
+          <div className="mt-4"><QuoteStatusBadge status={quote.status} label={formatQuoteStatus(quote.status)} /></div>
           <div className="data-table-wrap mt-5">
             {quote.items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
+              <div>
+                <table className="responsive-data-table w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                        Descricao
+                        Descrição
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                         Quantidade
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                        Valor unitario
+                        Valor unitário
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                         Subtotal
@@ -188,13 +189,13 @@ export default async function QuotePage({ params }: QuotePageProps) {
                           <td className="px-4 py-4 align-top text-sm font-semibold text-slate-950">
                             {item.description}
                           </td>
-                          <td className="px-4 py-4 align-top text-sm text-slate-700">
+                          <td data-label="Quantidade" className="px-4 py-4 align-top text-sm text-slate-700">
                             {item.quantity}
                           </td>
-                          <td className="px-4 py-4 align-top text-sm text-slate-700">
+                          <td data-label="Valor unitário" className="px-4 py-4 align-top text-sm text-slate-700">
                             {formatMoneyBRL(item.unitPrice)}
                           </td>
-                          <td className="px-4 py-4 align-top text-sm font-semibold text-slate-950">
+                          <td data-label="Subtotal" className="px-4 py-4 align-top text-sm font-semibold text-slate-950">
                             {formatMoneyBRL(item.subtotal)}
                           </td>
                           {quote.status === "DRAFT" ? (
@@ -202,7 +203,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
                               <div className="flex flex-wrap items-center gap-3">
                                 <Link
                                   href={`/app/service-orders/${serviceOrder.id}/quote/items/${item.id}/edit`}
-                                  className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                                  className="font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
                                 >
                                   Editar
                                 </Link>
@@ -223,7 +224,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
               </div>
             ) : (
               <div className="p-6 text-sm text-slate-600">
-                Nenhum item cadastrado.
+                Adicione o primeiro serviço ou peça no formulário abaixo. O orçamento precisa de pelo menos um item para ser disponibilizado.
               </div>
             )}
           </div>
@@ -246,17 +247,18 @@ export default async function QuotePage({ params }: QuotePageProps) {
               {canManageCommercialFlow ? (
                 <div className="surface-card p-5">
                   <h4 className="text-lg font-bold text-slate-950">
-                    Envio logico
+                    Disponibilizar ao cliente
                   </h4>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Registra que o orcamento foi enviado ao cliente por processo
-                    externo.
+                    Confira os itens e compartilhe o link do portal com o cliente. Esta ação libera a decisão no portal e coloca a ordem em espera pela aprovação. Nenhum email ou mensagem é enviado automaticamente.
                   </p>
                   <div className="mt-4">
                     <QuoteCommandForm
                       action={sendAction}
-                      label="Marcar orcamento como enviado"
-                      pendingLabel="Enviando..."
+                      label="Disponibilizar orçamento"
+                      pendingLabel="Disponibilizando..."
+                      disabled={quote.items.length === 0}
+                      confirmation="Disponibilizar este orçamento? Os itens não poderão mais ser editados. O cliente poderá aprovar ou rejeitar pelo portal; compartilhe o link com ele."
                     />
                   </div>
                 </div>
@@ -267,19 +269,21 @@ export default async function QuotePage({ params }: QuotePageProps) {
           {quote.status === "SENT" && canManageCommercialFlow ? (
             <div className="surface-card p-5">
               <h4 className="text-lg font-bold text-slate-950">
-                Decisao do orcamento
+                Decisao do orçamento
               </h4>
               <div className="mt-4 flex flex-wrap gap-3">
                 <QuoteCommandForm
                   action={approveAction}
-                  label="Registrar aprovacao"
+                  label="Registrar aprovação"
                   pendingLabel="Registrando..."
+                  confirmation="Registrar a aprovação informada pelo cliente? A ordem ficará aprovada para seguir para manutenção."
                 />
                 <QuoteCommandForm
                   action={rejectAction}
-                  label="Registrar rejeicao"
+                  label="Registrar rejeição"
                   pendingLabel="Registrando..."
                   variant="danger"
+                  confirmation="Registrar a rejeição informada pelo cliente? Esta decisão ficará no histórico do orçamento."
                 />
               </div>
             </div>
@@ -288,11 +292,12 @@ export default async function QuotePage({ params }: QuotePageProps) {
       ) : null}
 
       <div className="mt-6">
+        {quote && quote.status !== "DRAFT" ? <div className="surface-card-muted mb-5 p-5"><h2 className="font-semibold">{quote.status === "APPROVED" ? "Orçamento aprovado" : quote.status === "REJECTED" ? "Orçamento rejeitado" : "Compartilhe o acompanhamento"}</h2><p className="mt-2 text-sm muted-text">{quote.status === "APPROVED" ? "Volte à ordem para consultar as próximas etapas da manutenção." : quote.status === "REJECTED" ? "Combine os próximos passos com o cliente e acompanhe a situação na ordem." : "Abra o portal e copie o endereço para compartilhar com o cliente."}</p><Link href={`/track/${serviceOrder.publicCode}`} className="button-secondary mt-4" target="_blank" rel="noreferrer">Abrir portal do cliente (nova aba)</Link></div> : null}
         <Link
           href={`/app/service-orders/${serviceOrder.id}`}
-          className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          className="font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
         >
-          Voltar para ordem de servico
+          Voltar para ordem de serviço
         </Link>
       </div>
     </div>

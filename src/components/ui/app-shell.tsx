@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { logoutAction } from "@/app/app/actions";
 import {
   AccountIcon,
@@ -14,12 +15,17 @@ import {
   EquipmentIcon,
   LogoutIcon,
   MenuIcon,
+  SearchIcon,
   ServiceOrderIcon,
   TeamIcon
 } from "@/components/ui/icons";
 import { FixFlowLogo } from "@/components/ui/logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/components/ui/utils";
+import { Modal } from "@/components/ui/modal";
+import { SubmitButton } from "@/components/ui/submit-button";
+
+const CommandPalette = dynamic(() => import("@/components/ui/command-palette"));
 
 type AppShellProps = {
   children: ReactNode;
@@ -48,6 +54,27 @@ export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const previousPath = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
+    const frame = window.requestAnimationFrame(() => document.getElementById("main-content")?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && !event.isComposing) {
+        event.preventDefault();
+        setMobileOpen(false);
+        setSearchOpen((open) => !open);
+      }
+    }
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
 
   useEffect(() => {
     const animationFrame = window.requestAnimationFrame(() => {
@@ -73,16 +100,19 @@ export function AppShell({ children, user }: AppShellProps) {
   const navContent = (
     <>
       <div className={cn("flex h-20 items-center", compact ? "justify-center px-3" : "justify-between px-5")}>
-        <FixFlowLogo compact={compact} />
-        <button type="button" className="icon-button hidden size-9 lg:inline-flex" onClick={toggleCollapsed} aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}>
+        {!compact ? <FixFlowLogo /> : null}
+        <button type="button" className="icon-button hidden lg:inline-flex" onClick={toggleCollapsed} aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}>
           {compact ? <ChevronRightIcon className="size-4" /> : <ChevronLeftIcon className="size-4" />}
         </button>
-        <button type="button" className="icon-button size-9 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">
+        <button type="button" className="icon-button lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">
           <CloseIcon className="size-5" />
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-3 pb-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+        <button type="button" className={cn("button-secondary mb-3", compact && "px-0")} aria-label="Buscar e abrir comandos" aria-keyshortcuts="Control+k Meta+k" onClick={() => { setMobileOpen(false); setSearchOpen(true); }}>
+          <SearchIcon className="size-5 shrink-0" />{!compact ? <><span>Buscar</span><kbd className="ml-auto text-xs muted-text">Ctrl / ⌘ K</kbd></> : null}
+        </button>
         <nav aria-label="Navegação principal" className="space-y-1">
           {!compact ? <p className="px-3 pb-2 pt-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-400">Operação</p> : null}
           {mainItems.map((item) => {
@@ -120,10 +150,7 @@ export function AppShell({ children, user }: AppShellProps) {
             </div>
           ) : null}
           <form action={logoutAction}>
-            <button type="submit" title={compact ? "Sair" : undefined} className={cn("button-ghost w-full", compact ? "justify-center px-0" : "justify-start")}>
-              <LogoutIcon className="size-5" />
-              {!compact ? <span>Sair</span> : null}
-            </button>
+            <SubmitButton label={compact ? "Sair" : <><LogoutIcon className="size-5" /><span>Sair</span></>} pendingLabel="Saindo…" variant="ghost" className="w-full" />
           </form>
         </div>
       </div>
@@ -132,30 +159,28 @@ export function AppShell({ children, user }: AppShellProps) {
 
   return (
     <div className="min-h-screen">
+      <a href="#main-content" className="skip-link">Pular para o conteúdo</a>
       <aside className={cn("fixed inset-y-0 left-0 z-40 hidden border-r bg-white transition-[width] duration-200 dark:bg-[#121924] lg:flex lg:flex-col", collapsed ? "w-[76px]" : "w-[268px]")}>
         {navContent}
       </aside>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label="Fechar menu" />
-          <aside className="relative flex h-full w-[min(320px,88vw)] flex-col border-r bg-white shadow-2xl dark:bg-[#121924]">
-            {navContent}
-          </aside>
-        </div>
+        <Modal label="Menu principal" drawer onClose={() => setMobileOpen(false)}>{navContent}</Modal>
       ) : null}
+      {searchOpen ? <CommandPalette onClose={() => setSearchOpen(false)} /> : null}
 
       <div className={cn("min-h-screen transition-[padding] duration-200", collapsed ? "lg:pl-[76px]" : "lg:pl-[268px]")}>
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/90 px-4 backdrop-blur-xl dark:bg-[#0f131c]/90 sm:px-6 lg:hidden">
           <FixFlowLogo />
           <div className="flex items-center gap-2">
+            <button type="button" className="icon-button" aria-label="Buscar e abrir comandos" onClick={() => setSearchOpen(true)}><SearchIcon className="size-5" /></button>
             <ThemeToggle compact />
             <button type="button" className="icon-button" onClick={() => setMobileOpen(true)} aria-label="Abrir menu" aria-expanded={mobileOpen}>
               <MenuIcon className="size-5" />
             </button>
           </div>
         </header>
-        <main className="app-content px-4 py-6 sm:px-6 sm:py-8 xl:px-10 xl:py-10">
+        <main id="main-content" tabIndex={-1} className="app-content min-w-0 px-4 py-6 sm:px-6 sm:py-8 xl:px-10 xl:py-10">
           <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>

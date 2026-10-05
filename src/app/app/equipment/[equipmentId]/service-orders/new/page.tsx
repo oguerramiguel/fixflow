@@ -6,6 +6,7 @@ import { formatEquipmentType } from "@/app/app/format";
 import { createServiceOrderAction } from "@/app/app/service-orders/actions";
 import { ServiceOrderForm } from "@/app/app/service-orders/service-order-form";
 import { getEquipmentDetails } from "@/server/services/equipment-service";
+import { PageHeader } from "@/components/ui/primitives";
 
 type NewEquipmentServiceOrderPageProps = {
   params: Promise<{
@@ -36,14 +37,7 @@ export default async function NewEquipmentServiceOrderPage({
 
   return (
     <section className="max-w-3xl">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">
-          Abrir ordem de servico
-        </h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Registre o problema relatado para iniciar o atendimento.
-        </p>
-      </div>
+      <div className="mb-6"><PageHeader eyebrow="Nova ordem · Etapa 3 de 3" title="Descreva o problema" description="Confira o cliente e o equipamento. A ordem será criada como Recebido e ficará pronta para iniciar o diagnóstico." actions={<Link href={`/app/service-orders/new?customerId=${equipment.customer.id}`} className="button-secondary">Trocar equipamento</Link>} /></div>
 
       <dl className="mb-6 grid gap-5 rounded-lg border border-slate-200 bg-white p-5 md:grid-cols-2">
         <div>

@@ -122,7 +122,7 @@ export async function createQuoteAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=quote-created`);
 }
 
 export async function addQuoteItemAction(
@@ -140,7 +140,7 @@ export async function addQuoteItemAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=item-added`);
 }
 
 export async function updateQuoteItemAction(
@@ -159,7 +159,7 @@ export async function updateQuoteItemAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=item-updated`);
 }
 
 export async function removeQuoteItemAction(
@@ -176,7 +176,7 @@ export async function removeQuoteItemAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=item-removed`);
 }
 
 export async function sendQuoteAction(
@@ -192,7 +192,7 @@ export async function sendQuoteAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=quote-sent`);
 }
 
 export async function approveQuoteAction(
@@ -208,7 +208,7 @@ export async function approveQuoteAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=quote-approved`);
 }
 
 export async function rejectQuoteAction(
@@ -224,5 +224,5 @@ export async function rejectQuoteAction(
   }
 
   revalidateQuotePaths(serviceOrderId);
-  redirect(`/app/service-orders/${serviceOrderId}/quote`);
+  redirect(`/app/service-orders/${serviceOrderId}/quote?notice=quote-rejected`);
 }

@@ -17,7 +17,7 @@ function InviteSubmitButton() {
       disabled={pending}
       className="button-primary"
     >
-      {pending ? "Criando convite..." : "Convidar usuario"}
+      {pending ? "Criando convite..." : "Convidar usuário"}
     </button>
   );
 }
@@ -30,10 +30,10 @@ export function InviteUserForm() {
 
   return (
     <div className="surface-card p-5 sm:p-6">
-      <h3 className="section-title">Novo convite</h3>
+      <h2 className="section-title">Novo convite</h2>
       <p className="mt-2 text-sm leading-6 muted-text">
-        O usuario definira a propria senha pelo link gerado. Nenhum email sera
-        enviado nesta fase.
+        A pessoa definirá a própria senha pelo link gerado. Copie o link e
+        compartilhe com ela. O envio é manual.
       </p>
 
       <form action={formAction} className="mt-5 grid gap-5 md:grid-cols-2">
@@ -89,7 +89,7 @@ export function InviteUserForm() {
             htmlFor="invite-role"
             className="form-label"
           >
-            Funcao
+            Função
           </label>
           <select
             id="invite-role"
@@ -99,9 +99,9 @@ export function InviteUserForm() {
             aria-describedby="invite-role-error"
             className="form-input"
           >
-            <option value="OWNER">Proprietario</option>
+            <option value="OWNER">Proprietário</option>
             <option value="ADMIN">Administrador</option>
-            <option value="TECHNICIAN">Tecnico</option>
+            <option value="TECHNICIAN">Técnico</option>
           </select>
           {state.fieldErrors?.role ? (
             <p id="invite-role-error" className="mt-2 text-sm text-red-700">

@@ -51,6 +51,11 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
   return (
     <div className="page-stack">
       <PageHeader eyebrow={serviceOrder.publicCode} title="Diagnóstico técnico" description={`${serviceOrder.customer.name} · ${serviceOrder.equipment.brand} ${serviceOrder.equipment.model}`} actions={<ServiceOrderStatusBadge status={serviceOrder.status} label={formatServiceOrderStatus(serviceOrder.status)} />} />
+      <section className="surface-card-muted p-5" aria-label="Orientação do diagnóstico">
+        <h2 className="font-semibold">{canEdit ? "Registre a avaliação técnica" : "Consulte a avaliação registrada"}</h2>
+        <p className="mt-2 text-sm muted-text">{canEdit ? "Salve o diagnóstico antes de preparar os serviços e peças do orçamento. As notas técnicas são internas." : "O diagnóstico pode ser editado enquanto a ordem está em diagnóstico. Consulte a ordem para acompanhar a etapa atual."}</p>
+        {diagnostic ? <Link href={`/app/service-orders/${serviceOrder.id}/quote`} className="button-primary mt-4">Continuar para orçamento</Link> : !canEdit ? <Link href={`/app/service-orders/${serviceOrder.id}`} className="button-secondary mt-4">Ver etapas da ordem</Link> : null}
+      </section>
 
       <dl className="surface-card grid gap-5 p-5 md:grid-cols-2 sm:p-6">
         <div>
@@ -93,7 +98,7 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
         ) : diagnostic ? (
           <div>
             <h3 className="text-xl font-bold text-slate-950">
-              Diagnostico registrado
+              Diagnóstico registrado
             </h3>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-800">
               {diagnostic.description}
@@ -101,7 +106,7 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
             {diagnostic.technicalNotes ? (
               <div className="mt-5 border-t border-slate-200 pt-5">
                 <h4 className="text-sm font-semibold text-slate-950">
-                  Notas tecnicas
+                  Notas técnicas
                 </h4>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                   {diagnostic.technicalNotes}
@@ -114,7 +119,7 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
           </div>
         ) : (
           <p className="text-sm text-slate-600">
-            Diagnostico ainda nao registrado.
+            Diagnóstico ainda não registrado.
           </p>
         )}
       </div>
@@ -124,7 +129,7 @@ export default async function DiagnosticPage({ params }: DiagnosticPageProps) {
           href={`/app/service-orders/${serviceOrder.id}`}
           className="text-link"
         >
-          Voltar para ordem de servico
+          Voltar para ordem de serviço
         </Link>
       </div>
     </div>

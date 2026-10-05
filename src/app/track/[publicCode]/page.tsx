@@ -73,7 +73,7 @@ export default async function PublicTrackingPage({ params }: PublicTrackingPageP
   );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.10),transparent_32rem)] px-4 py-5 sm:px-6 sm:py-8">
+    <main className="min-h-screen [overflow-wrap:anywhere] bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.10),transparent_32rem)] px-4 py-5 sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-5xl">
         <header className="flex items-center justify-between gap-4"><FixFlowLogo href={`/track/${serviceOrder.publicCode}`} /><ThemeToggle compact /></header>
 
@@ -85,14 +85,14 @@ export default async function PublicTrackingPage({ params }: PublicTrackingPageP
         </section>
 
         {serviceOrder.status !== "CANCELLED" ? (
-          <section className="surface-card mt-7 overflow-x-auto p-5 sm:p-6" aria-labelledby="progress-title">
+          <section className="surface-card mt-7 p-5 sm:p-6" aria-labelledby="progress-title">
             <h2 id="progress-title" className="sr-only">Andamento da ordem</h2>
-            <ol className="grid min-w-[620px] grid-cols-6">
+            <ol className="grid grid-cols-3 gap-y-6 sm:grid-cols-6">
               {publicProgress.map((step, index) => {
                 const stepStatusIndex = serviceOrderStatuses.indexOf(step.status);
                 const complete = currentStatusIndex >= stepStatusIndex;
                 const active = index === currentPublicStep;
-                return <li key={step.status} className="relative flex flex-col items-center text-center before:absolute before:left-0 before:right-0 before:top-4 before:h-0.5 before:bg-slate-200 first:before:left-1/2 last:before:right-1/2 dark:before:bg-slate-700"><span className={`relative z-10 flex size-8 items-center justify-center rounded-full border-2 ${complete ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"}`}>{complete && !active ? <CheckIcon className="size-4" /> : <span className="size-2 rounded-full bg-current" />}</span><span className={`mt-3 text-xs font-semibold ${active ? "text-brand-700 dark:text-brand-300" : complete ? "text-slate-700 dark:text-slate-200" : "muted-text"}`}>{step.label}</span></li>;
+                return <li key={step.status} aria-current={active ? "step" : undefined} className="relative flex flex-col items-center text-center before:absolute before:left-0 before:right-0 before:top-4 before:h-0.5 before:bg-slate-200 first:before:left-1/2 last:before:right-1/2 dark:before:bg-slate-700"><span className={`relative z-10 flex size-8 items-center justify-center rounded-full border-2 ${complete ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-800"}`}>{complete && !active ? <CheckIcon className="size-4" /> : <span className="size-2 rounded-full bg-current" />}</span><span className={`mt-3 text-xs font-semibold ${active ? "text-brand-700 dark:text-brand-300" : complete ? "text-slate-700 dark:text-slate-200" : "muted-text"}`}>{step.label}</span></li>;
               })}
             </ol>
           </section>
@@ -111,7 +111,7 @@ export default async function PublicTrackingPage({ params }: PublicTrackingPageP
               <div className="mt-5 hidden overflow-x-auto sm:block"><table className="data-table"><thead><tr><th>Descrição</th><th>Qtd.</th><th>Valor unitário</th><th className="text-right">Subtotal</th></tr></thead><tbody>{serviceOrder.quote.items.map((item, index) => <tr key={`${index}-${item.description}`}><td className="font-semibold !text-slate-900 dark:!text-slate-100">{item.description}</td><td>{item.quantity}</td><td>{formatMoneyBRL(item.unitPrice)}</td><td className="text-right font-semibold !text-slate-900 dark:!text-slate-100">{formatMoneyBRL(item.subtotal)}</td></tr>)}</tbody></table></div>
               <div className="mt-5 divide-y rounded-xl border sm:hidden">{serviceOrder.quote.items.map((item, index) => <div key={`${index}-${item.description}`} className="p-4"><p className="font-semibold text-slate-900 dark:text-slate-100">{item.description}</p><div className="mt-3 flex justify-between gap-4 text-sm muted-text"><span>{item.quantity} × {formatMoneyBRL(item.unitPrice)}</span><span className="font-bold text-slate-900 dark:text-slate-100">{formatMoneyBRL(item.subtotal)}</span></div></div>)}</div>
             </> : <EmptyState title="Nenhum item disponível" />}
-            {serviceOrder.quote.canDecide ? <div className="mt-7 border-t pt-6"><PublicQuoteDecisionForm approveAction={approveAction} rejectAction={rejectAction} /></div> : <p className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-sm muted-text dark:bg-slate-800">Este orçamento está em modo somente leitura.</p>}
+            {serviceOrder.quote.canDecide ? <div className="mt-7 border-t pt-6"><PublicQuoteDecisionForm approveAction={approveAction} rejectAction={rejectAction} /></div> : <p role="status" className="mt-6 rounded-xl bg-slate-50 px-4 py-3 text-sm muted-text dark:bg-slate-800">{serviceOrder.quote.status === "APPROVED" ? "Orçamento aprovado. A equipe já pode continuar o atendimento. Acompanhe as próximas etapas por aqui." : serviceOrder.quote.status === "REJECTED" ? "Orçamento rejeitado. Entre em contato com a assistência para combinar os próximos passos." : "Este orçamento está disponível apenas para consulta."}</p>}
           </div> : <EmptyState title="Orçamento ainda não disponível" description="Você poderá consultar os itens e decidir assim que a equipe concluir o orçamento." />}
         </section>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/primitives";
 import { notFound } from "next/navigation";
 import { DomainError } from "@/domain/errors/domain-error";
 import { NotFoundError } from "@/domain/errors/not-found-error";
@@ -71,9 +72,9 @@ async function CustomerPicker({
   return (
     <section>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">
+        <h1 className="page-title">
           Escolher cliente
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-600">
           Selecione o cliente para cadastrar um equipamento.
         </p>
@@ -102,14 +103,14 @@ async function CustomerPicker({
         <div className="flex items-end gap-3">
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            className="button-secondary"
           >
             Buscar
           </button>
           {result.query ? (
             <Link
               href="/app/equipment/new"
-              className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              className="button-secondary"
             >
               Limpar
             </Link>
@@ -145,7 +146,7 @@ async function CustomerPicker({
                 </div>
                 <Link
                   href={`/app/equipment/new?customerId=${customer.id}`}
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                  className="button-primary"
                 >
                   Selecionar
                 </Link>
@@ -153,15 +154,13 @@ async function CustomerPicker({
             ))}
           </div>
         ) : (
-          <div className="p-6 text-sm text-slate-600">
-            Nenhum cliente encontrado.
-          </div>
+          <EmptyState title={query ? "Nenhum cliente corresponde à busca" : "Cadastre um cliente primeiro"} description={query ? "Confira o nome ou telefone. Se for um novo cliente, cadastre-o para vincular o equipamento." : "Todo equipamento precisa estar vinculado a um cliente."} action={<Link href="/app/customers/new" className="button-primary">Cadastrar cliente</Link>} />
         )}
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
-          Pagina {result.currentPage}
+          Página {result.currentPage}
           {result.totalPages > 0 ? ` de ${result.totalPages}` : ""}
         </p>
         <div className="flex gap-2">
@@ -171,12 +170,12 @@ async function CustomerPicker({
                 page: result.currentPage - 1,
                 query: result.query
               })}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              className="button-secondary"
             >
               Anterior
             </Link>
           ) : (
-            <span className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-400">
+            <span aria-disabled="true" className="button-secondary cursor-not-allowed opacity-50">
               Anterior
             </span>
           )}
@@ -186,13 +185,13 @@ async function CustomerPicker({
                 page: result.currentPage + 1,
                 query: result.query
               })}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              className="button-secondary"
             >
-              Proxima
+              Próxima
             </Link>
           ) : (
-            <span className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-400">
-              Proxima
+            <span aria-disabled="true" className="button-secondary cursor-not-allowed opacity-50">
+              Próxima
             </span>
           )}
         </div>
@@ -218,9 +217,9 @@ export default async function NewEquipmentPage({
   return (
     <section className="max-w-3xl">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">
+        <h1 className="page-title">
           Novo equipamento
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-600">
           Equipamento vinculado ao cliente selecionado.
         </p>

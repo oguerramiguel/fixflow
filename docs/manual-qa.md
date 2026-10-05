@@ -3,6 +3,19 @@
 Use este checklist para validar manualmente o MVP local antes de publicar
 screenshots, gravar uma demonstracao ou abrir uma release.
 
+## Link publico e regressao da Fase 9D
+
+Registro executado: [phase-9d-product-polish.md](phase-9d-product-polish.md).
+O registro distingue QA no navegador, regressao automatizada e limitacoes.
+
+- [ ] Abrir uma OS do tenant autenticado e localizar "Link público".
+- [ ] Conferir a URL completa com a base de `FIXFLOW_APP_BASE_URL` e o publicCode existente.
+- [ ] Acionar "Copiar link" com mouse e teclado e conferir o clipboard e "Link copiado".
+- [ ] Confirmar que um toast anterior nao se sobrepoe ao toast de copia.
+- [ ] Abrir o portal em nova aba e conferir que nao exibe dados privados.
+- [ ] Conferir campo, botoes e toast em 375, 390, 768 e 1440 px nos dois temas.
+- [ ] Com clipboard bloqueado, conferir a orientacao para copia manual.
+
 ## Ambiente
 
 - [ ] `.env` existe localmente e nao foi commitado.

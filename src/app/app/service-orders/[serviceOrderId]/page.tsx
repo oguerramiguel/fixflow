@@ -12,6 +12,8 @@ import { ArrowUpRightIcon, ClockIcon } from "@/components/ui/icons";
 import { EmptyState, PageHeader } from "@/components/ui/primitives";
 import { QuoteStatusBadge, ServiceOrderStatusBadge } from "@/components/ui/status-badge";
 import { getServiceOrderDetails } from "@/server/services/service-order-service";
+import { getRuntimeConfig } from "@/server/runtime/runtime-config";
+import { PublicLinkPanel } from "@/components/ui/public-link-panel";
 
 type ServiceOrderDetailsPageProps = { params: Promise<{ serviceOrderId: string }> };
 
@@ -42,6 +44,7 @@ export default async function ServiceOrderDetailsPage({ params }: ServiceOrderDe
   const { context, serviceOrder } = await getServiceOrderOrNotFound(serviceOrderId);
   const transitionAction = transitionServiceOrderStatusAction.bind(null, serviceOrder.id);
   const statusActions = buildStatusActions(serviceOrder.allowedNextStatuses, context.role);
+  const publicUrl = new URL(`/track/${encodeURIComponent(serviceOrder.publicCode)}`, getRuntimeConfig().appBaseUrl).toString();
 
   return (
     <div className="page-stack">
@@ -63,9 +66,11 @@ export default async function ServiceOrderDetailsPage({ params }: ServiceOrderDe
 
       <ServiceOrderStatusActions action={transitionAction} actions={statusActions} />
 
+      <PublicLinkPanel publicUrl={publicUrl} />
+
       <section className="grid gap-6 lg:grid-cols-2" aria-label="Diagnóstico e orçamento">
         <article className="surface-card flex min-h-64 flex-col p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4"><div><h2 className="section-title">Diagnóstico</h2><p className="mt-1 text-sm muted-text">Registro técnico operacional</p></div>{serviceOrder.status === "IN_DIAGNOSIS" ? <Link href={`/app/service-orders/${serviceOrder.id}/diagnostic`} className="button-secondary min-h-10">{serviceOrder.diagnostic ? "Editar" : "Registrar"}</Link> : null}</div>
+          <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="section-title">Diagnóstico</h2><p className="mt-1 text-sm muted-text">Avaliação técnica do equipamento</p></div>{serviceOrder.status === "IN_DIAGNOSIS" ? <Link href={`/app/service-orders/${serviceOrder.id}/diagnostic`} className="button-secondary" aria-label={serviceOrder.diagnostic ? "Editar diagnóstico" : "Registrar diagnóstico"}>{serviceOrder.diagnostic ? "Editar" : "Registrar"}</Link> : null}</div>
           {serviceOrder.diagnostic ? <div className="mt-6 flex flex-1 flex-col"><p className="line-clamp-5 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{serviceOrder.diagnostic.description}</p><Link href={`/app/service-orders/${serviceOrder.id}/diagnostic`} className="text-link mt-auto inline-flex items-center gap-1 pt-5 text-sm">Ver diagnóstico <ArrowUpRightIcon className="size-4" /></Link></div> : <div className="flex flex-1 items-center"><EmptyState title="Diagnóstico não registrado" description={serviceOrder.status === "IN_DIAGNOSIS" ? "Registre a avaliação técnica para avançar no atendimento." : "O diagnóstico estará disponível quando for registrado."} /></div>}
         </article>
 

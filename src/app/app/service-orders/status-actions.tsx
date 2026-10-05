@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { ServiceOrderStatus } from "@/domain/entities/service-order";
 import type { ServiceOrderTransitionFormState } from "./actions";
+import { ConfirmableForm } from "@/components/ui/confirmable-form";
 
 type ServiceOrderTransitionFormAction = (
   previousState: ServiceOrderTransitionFormState,
@@ -54,7 +55,7 @@ export function ServiceOrderStatusActions({
   return (
     <section className="surface-card p-5 sm:p-6">
       <h2 className="section-title">Próximas etapas</h2>
-      <p className="mt-1 text-sm muted-text">Avance o atendimento conforme o fluxo permitido.</p>
+      <p className="mt-1 text-sm muted-text">Registre a próxima etapa realizada. Cada mudança fica no histórico do atendimento.</p>
       {state.error ? (
         <p
           role="alert"
@@ -66,7 +67,7 @@ export function ServiceOrderStatusActions({
 
       <div className="mt-4 flex flex-wrap gap-3">
         {actions.map((statusAction) => (
-          <form key={statusAction.targetStatus} action={formAction}>
+          <ConfirmableForm key={statusAction.targetStatus} action={formAction} confirmation={statusAction.targetStatus === "CANCELLED" ? "Cancelar esta ordem? O atendimento será encerrado como cancelado e a mudança ficará no histórico." : undefined}>
             <input
               type="hidden"
               name="targetStatus"
@@ -76,7 +77,7 @@ export function ServiceOrderStatusActions({
               label={statusAction.label}
               variant={statusAction.variant}
             />
-          </form>
+          </ConfirmableForm>
         ))}
       </div>
     </section>

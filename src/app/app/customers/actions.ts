@@ -85,7 +85,7 @@ export async function createCustomerAction(
     throw new Error("Customer creation did not return an id.");
   }
 
-  redirect(`/app/customers/${customerId}`);
+  redirect(`/app/customers/${customerId}?notice=customer-created`);
 }
 
 export async function updateCustomerAction(
@@ -102,5 +102,5 @@ export async function updateCustomerAction(
     return handleCustomerActionError(error, values);
   }
 
-  redirect(`/app/customers/${customerId}`);
+  redirect(`/app/customers/${customerId}?notice=customer-updated`);
 }

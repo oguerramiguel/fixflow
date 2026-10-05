@@ -66,6 +66,12 @@ describe("equipment repository", () => {
                 contains: "dell",
                 mode: "insensitive"
               }
+            },
+            {
+              customer: {
+                organizationId: "org-1",
+                name: { contains: "dell", mode: "insensitive" }
+              }
             }
           ]
         }),
@@ -101,6 +107,18 @@ describe("equipment repository", () => {
         }
       })
     );
+  });
+
+  it.each(["org-a", "org-b"])("keeps customer name searches scoped to %s in list and count", async (organizationId) => {
+    mocks.equipment.findMany.mockResolvedValue([]);
+    mocks.equipment.count.mockResolvedValue(0);
+    await listEquipment({ organizationId }, { page: 1, query: "Marcio" });
+    await countEquipment({ organizationId }, "Marcio");
+    const expectedWhere = expect.objectContaining({ organizationId, OR: expect.arrayContaining([
+      { customer: { organizationId, name: { contains: "Marcio", mode: "insensitive" } } }
+    ]) });
+    expect(mocks.equipment.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+    expect(mocks.equipment.count).toHaveBeenCalledWith({ where: expectedWhere });
   });
 
   it("finds equipment by id and organizationId", async () => {

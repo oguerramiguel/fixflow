@@ -44,14 +44,14 @@ export default async function EditCustomerPage({
   return (
     <section className="max-w-3xl">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-950">Editar cliente</h2>
+        <h1 className="page-title">Editar cliente</h1>
         <p className="mt-2 text-sm text-slate-600">{customer.name}</p>
       </div>
 
       <CustomerForm
         action={action}
         initialValues={initialValues}
-        submitLabel="Salvar alteracoes"
+        submitLabel="Salvar alterações"
         pendingLabel="Salvando..."
         cancelHref={`/app/customers/${customer.id}`}
       />

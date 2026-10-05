@@ -124,7 +124,7 @@ describe("delivery actions", () => {
           organizationId: "org-from-browser"
         })
       )
-    ).rejects.toThrow("redirect:/app/customers/customer-1");
+    ).rejects.toThrow("redirect:/app/customers/customer-1?notice=customer-created");
 
     expect(mocks.requireAuthenticatedContext).toHaveBeenCalledTimes(1);
     expect(mocks.createCustomer).toHaveBeenCalledWith(
@@ -185,7 +185,7 @@ describe("delivery actions", () => {
           organizationId: "org-from-browser"
         })
       )
-    ).rejects.toThrow("redirect:/app/equipment/equipment-1");
+    ).rejects.toThrow("redirect:/app/equipment/equipment-1?notice=equipment-created");
 
     expect(mocks.createEquipment).toHaveBeenCalledWith(
       context,
@@ -221,7 +221,7 @@ describe("delivery actions", () => {
           organizationId: "org-from-browser"
         })
       )
-    ).rejects.toThrow("redirect:/app/equipment/equipment-1");
+    ).rejects.toThrow("redirect:/app/equipment/equipment-1?notice=equipment-updated");
 
     expect(mocks.updateEquipment).toHaveBeenCalledWith(
       context,
@@ -251,7 +251,7 @@ describe("delivery actions", () => {
           reportedIssue: "Tela apagando."
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1?notice=order-created");
 
     expect(mocks.requireAuthenticatedContext).toHaveBeenCalledTimes(1);
     expect(mocks.createServiceOrder).toHaveBeenCalledWith(context, {
@@ -311,7 +311,7 @@ describe("delivery actions", () => {
           description: "browser controlled timeline"
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1?notice=status-updated");
 
     expect(mocks.transitionServiceOrderStatus).toHaveBeenCalledWith(
       context,
@@ -376,7 +376,7 @@ describe("delivery actions", () => {
         })
       )
     ).rejects.toThrow(
-      "redirect:/app/service-orders/service-order-from-route/diagnostic"
+      "redirect:/app/service-orders/service-order-from-route/diagnostic?notice=diagnostic-saved"
     );
 
     expect(mocks.saveDiagnosticForServiceOrder).toHaveBeenCalledWith(
@@ -405,7 +405,7 @@ describe("delivery actions", () => {
           currentServiceOrderStatus: "IN_DIAGNOSIS"
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote?notice=quote-created");
 
     expect(mocks.createQuoteForServiceOrder).toHaveBeenCalledWith(
       context,
@@ -431,7 +431,7 @@ describe("delivery actions", () => {
           organizationId: "org-from-browser"
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote?notice=item-added");
 
     expect(mocks.addQuoteItem).toHaveBeenCalledWith(context, "service-order-1", {
       description: "Limpeza interna",
@@ -461,7 +461,7 @@ describe("delivery actions", () => {
           unitPrice: "120.00"
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote?notice=item-updated");
 
     await expect(
       removeQuoteItemAction(
@@ -474,7 +474,7 @@ describe("delivery actions", () => {
           organizationId: "org-from-browser"
         })
       )
-    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+    ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote?notice=item-removed");
 
     expect(mocks.updateQuoteItem).toHaveBeenCalledWith(
       context,
@@ -504,7 +504,7 @@ describe("delivery actions", () => {
       id: "quote-1"
     });
 
-    for (const action of [sendQuoteAction, approveQuoteAction, rejectQuoteAction]) {
+    for (const [action, notice] of [[sendQuoteAction, "quote-sent"], [approveQuoteAction, "quote-approved"], [rejectQuoteAction, "quote-rejected"]] as const) {
       await expect(
         action(
           "service-order-1",
@@ -518,7 +518,7 @@ describe("delivery actions", () => {
             description: "browser timeline"
           })
         )
-      ).rejects.toThrow("redirect:/app/service-orders/service-order-1/quote");
+      ).rejects.toThrow(`redirect:/app/service-orders/service-order-1/quote?notice=${notice}`);
     }
 
     expect(mocks.sendQuote).toHaveBeenCalledWith(context, "service-order-1");

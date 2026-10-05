@@ -109,7 +109,7 @@ export async function createEquipmentAction(
     throw new Error("Equipment creation did not return an id.");
   }
 
-  redirect(`/app/equipment/${equipmentId}`);
+  redirect(`/app/equipment/${equipmentId}?notice=equipment-created`);
 }
 
 export async function updateEquipmentAction(
@@ -126,5 +126,5 @@ export async function updateEquipmentAction(
     return handleEquipmentActionError(error, values);
   }
 
-  redirect(`/app/equipment/${equipmentId}`);
+  redirect(`/app/equipment/${equipmentId}?notice=equipment-updated`);
 }

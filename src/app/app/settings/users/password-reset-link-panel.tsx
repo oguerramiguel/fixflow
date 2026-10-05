@@ -39,7 +39,7 @@ export function PasswordResetLinkPanel({
       </p>
       <p className="mt-1 text-sm leading-6 text-amber-900">
         O token bruto desaparecera ao recarregar a pagina. Entregue o link
-        manualmente ao usuario.
+        manualmente ao usuário.
       </p>
       <label
         htmlFor={`password-reset-link-${resetPath.slice(-8)}`}
@@ -59,7 +59,7 @@ export function PasswordResetLinkPanel({
         <button
           type="button"
           onClick={copyLink}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          className="button-primary"
         >
           Copiar link
         </button>

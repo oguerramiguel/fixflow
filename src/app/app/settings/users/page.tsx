@@ -4,7 +4,7 @@ import { requireAuthenticatedContextOrRedirect } from "@/app/app/auth";
 import { formatDate, formatDateTime } from "@/app/app/format";
 import { InviteUserForm } from "./invite-user-form";
 import { UserActions } from "./user-actions";
-import { PageHeader } from "@/components/ui/primitives";
+import { EmptyState, PageHeader } from "@/components/ui/primitives";
 import { listUsersForOrganization } from "@/server/services/user-management-service";
 
 function getStatusClassName(status: "ACTIVE" | "INVITED" | "DISABLED"): string {
@@ -37,7 +37,7 @@ export default async function OrganizationUsersPage() {
     <div className="page-stack">
       <PageHeader eyebrow="Configurações" title="Usuários da organização" description="Convide pessoas, controle funções, desative acessos e revogue sessões. Somente proprietários podem usar estas operações." />
 
-      <section aria-label="Novo convite">
+      <section id="invite-user" aria-label="Novo convite">
         <InviteUserForm />
       </section>
 
@@ -51,14 +51,14 @@ export default async function OrganizationUsersPage() {
 
         {users.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="data-table min-w-[980px]">
+            <table className="data-table responsive-data-table w-full">
               <thead>
                 <tr>
                   <th>
-                    Usuario
+                    Usuário
                   </th>
                   <th>
-                    Funcao
+                    Função
                   </th>
                   <th>
                     Status
@@ -67,7 +67,7 @@ export default async function OrganizationUsersPage() {
                     Criado em
                   </th>
                   <th className="min-w-96">
-                    Acoes
+                    Ações
                   </th>
                 </tr>
               </thead>
@@ -79,18 +79,18 @@ export default async function OrganizationUsersPage() {
                         {user.name}
                         {user.isCurrentUser ? (
                           <span className="ml-2 text-xs font-medium text-slate-500">
-                            Voce
+                            Você
                           </span>
                         ) : null}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">{user.email}</p>
                     </td>
-                    <td className="align-top">
+                    <td data-label="Função" className="align-top">
                       {user.roleLabel}
                     </td>
                     <td className="align-top">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClassName(user.status)}`}
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClassName(user.status)}`}
                       >
                         {user.statusLabel}
                       </span>
@@ -103,7 +103,7 @@ export default async function OrganizationUsersPage() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="align-top">
+                    <td data-label="Criado em" className="align-top">
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="align-top">
@@ -121,9 +121,7 @@ export default async function OrganizationUsersPage() {
             </table>
           </div>
         ) : (
-          <p className="px-5 py-8 text-sm muted-text">
-            Nenhum usuario encontrado.
-          </p>
+          <EmptyState title="Nenhum integrante disponível" description="Convide alguém pelo formulário acima para compartilhar os atendimentos com a equipe." action={<a href="#invite-user" className="button-secondary">Criar convite</a>} />
         )}
       </section>
     </div>

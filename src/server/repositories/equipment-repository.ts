@@ -107,6 +107,12 @@ function buildEquipmentWhere(
           contains: query,
           mode: "insensitive"
         }
+      },
+      {
+        customer: {
+          organizationId: context.organizationId,
+          name: { contains: query, mode: "insensitive" }
+        }
       }
     ]
   };

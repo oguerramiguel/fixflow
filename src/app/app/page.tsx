@@ -107,7 +107,7 @@ export default async function AppPage() {
                 );
               })}
             </div>
-          ) : <EmptyState title="Sem ordens ainda" description="A distribuição aparecerá quando a primeira ordem for criada." />}
+          ) : <EmptyState title="Sem ordens ainda" description="A distribuição aparecerá quando a primeira ordem for criada." action={<Link href="/app/service-orders/new" className="button-secondary">Criar primeira ordem</Link>} />}
         </section>
       </div>
 
@@ -118,20 +118,20 @@ export default async function AppPage() {
         </div>
         {dashboard.recentServiceOrders.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="data-table min-w-[720px]">
+            <table className="data-table responsive-data-table w-full">
               <thead><tr><th>Ordem</th><th>Cliente</th><th>Equipamento</th><th>Status</th><th>Entrada</th></tr></thead>
               <tbody>{dashboard.recentServiceOrders.map((order) => (
                 <tr key={order.id}>
                   <td><Link href={`/app/service-orders/${order.id}`} className="text-link">{order.publicCode}</Link></td>
-                  <td className="font-medium !text-slate-900 dark:!text-slate-100">{order.customerName}</td>
-                  <td>{order.equipmentName}</td>
+                  <td data-label="Cliente" className="font-medium !text-slate-900 dark:!text-slate-100">{order.customerName}</td>
+                  <td data-label="Equipamento">{order.equipmentName}</td>
                   <td><ServiceOrderStatusBadge status={order.status} label={order.statusLabel} /></td>
-                  <td>{formatDate(order.createdAt)}</td>
+                  <td data-label="Entrada">{formatDate(order.createdAt)}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
-        ) : <EmptyState title="Nenhuma ordem cadastrada" description="As ordens mais recentes aparecerão aqui." action={<Link href="/app/equipment" className="button-primary">Criar primeira ordem</Link>} />}
+        ) : <EmptyState title="Nenhuma ordem cadastrada" description="As ordens mais recentes aparecerão aqui." action={<Link href="/app/service-orders/new" className="button-primary">Criar primeira ordem</Link>} />}
       </section>
     </div>
   );

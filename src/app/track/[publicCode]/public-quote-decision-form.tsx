@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { PublicQuoteDecisionFormState } from "./actions";
+import { ConfirmableForm } from "@/components/ui/confirmable-form";
 
 type PublicQuoteDecisionFormAction = (
   previousState: PublicQuoteDecisionFormState,
@@ -50,7 +51,7 @@ function DecisionForm({
   const [state, formAction] = useActionState(action, {});
 
   return (
-    <form action={formAction}>
+    <ConfirmableForm action={formAction} confirmation={variant === "approve" ? "Aprovar este orçamento? A assistência receberá sua decisão para continuar o atendimento. Confira os itens e o total antes de confirmar." : "Rejeitar este orçamento? Sua decisão será registrada. Entre em contato com a assistência para combinar os próximos passos."}>
       {state.error ? (
         <p
           role="alert"
@@ -64,7 +65,7 @@ function DecisionForm({
         pendingLabel={pendingLabel}
         variant={variant}
       />
-    </form>
+    </ConfirmableForm>
   );
 }
 

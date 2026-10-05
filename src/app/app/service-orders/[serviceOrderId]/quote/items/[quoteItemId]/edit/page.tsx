@@ -48,9 +48,9 @@ export default async function EditQuoteItemPage({
   return (
     <section>
       <div>
-        <h2 className="text-2xl font-bold text-slate-950">
-          Editar item do orcamento
-        </h2>
+        <h1 className="page-title">
+          Editar item do orçamento
+        </h1>
         <p className="mt-2 text-sm text-slate-600">
           Total atual: {formatMoneyBRL(quote.total)}.
         </p>
@@ -72,12 +72,12 @@ export default async function EditQuoteItemPage({
         ) : (
           <div>
             <p className="text-sm text-slate-600">
-              Itens nao podem ser alterados depois que o orcamento sai do
+              Itens não podem ser alterados depois que o orçamento sai do
               rascunho.
             </p>
             <Link
               href={`/app/service-orders/${serviceOrderId}/quote`}
-              className="mt-4 inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              className="button-secondary mt-4"
             >
               Voltar
             </Link>

@@ -654,6 +654,28 @@ repository cria Organization, OWNER, convite e auditoria na mesma transacao e
 nunca recebe o token bruto. O comando e somente a fronteira operacional segura
 para exibir o link one-time.
 
+## Polimento operacional da Fase 9D
+
+A busca autenticada em `GET /api/search` resolve o contexto no servidor, limita
+os resultados a cinco por categoria e usa `Cache-Control: private, no-store`.
+O repository filtra o tenant em todas as categorias e nas relacoes consultadas.
+O DTO contem somente dados de navegacao e e separado do DTO publico.
+
+A selecao inicial de OS usa os services existentes para validar cliente e
+equipamento dentro da organizacao. Criacao e transicoes continuam usando as
+regras de dominio e transacoes existentes.
+
+O detalhe interno monta `/track/[publicCode]` com a base validada por
+`getRuntimeConfig().appBaseUrl` (`FIXFLOW_APP_BASE_URL`). Apenas a URL pronta
+chega ao componente de copia. Nao se confia em `Host` nem em base fornecida pelo
+browser; nenhum token, permissao ou endpoint publico e criado.
+
+Feedback de redirects usa uma lista fechada de mensagens (`notice`). Esse
+parametro e somente apresentacao, nunca prova de operacao ou autorizacao.
+Confirmacoes no browser nao substituem a validacao das server actions.
+
+Detalhes: [relatorio da Fase 9D](phase-9d-product-polish.md).
+
 ## Evolucoes futuras
 
 - envio de convite ou redefinicao por email e recuperacao autonoma;

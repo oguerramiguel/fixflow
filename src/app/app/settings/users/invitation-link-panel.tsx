@@ -30,7 +30,7 @@ export function InvitationLinkPanel({
         Copie este link agora
       </p>
       <p className="mt-1 text-sm leading-6 text-amber-900">
-        Por seguranca, o token bruto nao sera exibido novamente depois que esta
+        Por seguranca, o token bruto não será exibido novamente depois que esta
         tela for recarregada.
       </p>
       <label
@@ -50,7 +50,7 @@ export function InvitationLinkPanel({
         <button
           type="button"
           onClick={copyLink}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+          className="button-primary"
         >
           Copiar link
         </button>

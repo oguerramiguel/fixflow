@@ -98,7 +98,7 @@ function RoleForm({
     <div>
       <form action={formAction} className="flex flex-col gap-2 sm:flex-row">
         <label htmlFor={fieldId} className="sr-only">
-          Nova funcao
+          Nova função
         </label>
         <select
           id={fieldId}
@@ -106,11 +106,11 @@ function RoleForm({
           defaultValue={currentRole}
           className="form-input mt-0 min-h-10 py-0 text-sm"
         >
-          <option value="OWNER">Proprietario</option>
+          <option value="OWNER">Proprietário</option>
           <option value="ADMIN">Administrador</option>
-          <option value="TECHNICIAN">Tecnico</option>
+          <option value="TECHNICIAN">Técnico</option>
         </select>
-        <SubmitButton label="Alterar funcao" pendingLabel="Alterando..." />
+        <SubmitButton label="Alterar função" pendingLabel="Alterando..." />
       </form>
       <ActionFeedback state={state} />
     </div>
@@ -202,7 +202,7 @@ export function UserActions({
         />
       ) : (
         <p className="text-sm text-slate-600">
-          Sua propria funcao nao pode ser alterada aqui.
+          Sua própria função não pode ser alterada aqui.
         </p>
       )}
 
@@ -217,7 +217,7 @@ export function UserActions({
         ) : !isCurrentUser ? (
           <ConfirmedActionForm
             action={disableAction}
-            confirmation="Desativar este usuario e revogar todas as sessoes?"
+            confirmation="Desativar este usuário e revogar todas as sessões?"
             label="Desativar"
             pendingLabel="Desativando..."
             variant="danger"
@@ -228,10 +228,10 @@ export function UserActions({
           action={sessionsAction}
           confirmation={
             isCurrentUser
-              ? "Revogar todas as suas sessoes? Voce precisara entrar novamente."
-              : "Revogar todas as sessoes deste usuario?"
+              ? "Revogar todas as suas sessões? Você precisara entrar novamente."
+              : "Revogar todas as sessões deste usuário?"
           }
-          label="Revogar sessoes"
+          label="Revogar sessões"
           pendingLabel="Revogando..."
         />
 
@@ -257,13 +257,13 @@ export function UserActions({
           <>
             <ConfirmedActionForm
               action={passwordResetAction}
-              confirmation="Gerar um link de redefinicao? Um link pendente anterior sera revogado."
+              confirmation="Gerar um link de redefinicao? Um link pendente anterior será revogado."
               label="Gerar link de senha"
               pendingLabel="Gerando..."
             />
             <ConfirmedActionForm
               action={revokePasswordResetAction}
-              confirmation="Revogar qualquer link de redefinicao pendente deste usuario?"
+              confirmation="Revogar qualquer link de redefinicao pendente deste usuário?"
               label="Revogar link de senha"
               pendingLabel="Revogando..."
               variant="danger"

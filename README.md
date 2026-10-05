@@ -150,13 +150,13 @@ server-side e dados isolados por `Organization`.
 
 Versoes reais registradas em `package.json` e `package-lock.json`:
 
-- Next.js 16.2.12
+- Next.js 16.3.8
 - React 19.1.0
 - TypeScript 5.8.3
 - Tailwind CSS 3.4.17
 - Prisma 6.10.1
 - PostgreSQL 16 via Docker Compose
-- Vitest 3.2.7
+- Vitest 4.1.11
 - ESLint 9.29.0
 - bcryptjs 3.0.2
 - npm 10.9.2

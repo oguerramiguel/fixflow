@@ -119,7 +119,7 @@ export async function createServiceOrderAction(
 
   revalidatePath("/app/service-orders");
   revalidatePath(`/app/equipment/${equipmentId}`);
-  redirect(`/app/service-orders/${serviceOrderId}`);
+  redirect(`/app/service-orders/${serviceOrderId}?notice=order-created`);
 }
 
 export async function transitionServiceOrderStatusAction(
@@ -138,5 +138,5 @@ export async function transitionServiceOrderStatusAction(
 
   revalidatePath("/app/service-orders");
   revalidatePath(`/app/service-orders/${serviceOrderId}`);
-  redirect(`/app/service-orders/${serviceOrderId}`);
+  redirect(`/app/service-orders/${serviceOrderId}?notice=status-updated`);
 }

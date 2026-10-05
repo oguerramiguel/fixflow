@@ -77,5 +77,5 @@ export async function saveDiagnosticAction(
   revalidatePath("/app/service-orders");
   revalidatePath(`/app/service-orders/${serviceOrderId}`);
   revalidatePath(`/app/service-orders/${serviceOrderId}/diagnostic`);
-  redirect(`/app/service-orders/${serviceOrderId}/diagnostic`);
+  redirect(`/app/service-orders/${serviceOrderId}/diagnostic?notice=diagnostic-saved`);
 }

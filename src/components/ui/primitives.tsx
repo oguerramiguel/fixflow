@@ -44,7 +44,7 @@ export function EmptyState({
 
 export function Pagination({ children }: { children: ReactNode }) {
   return (
-    <nav aria-label="Paginacao" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <nav aria-label="Paginação" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       {children}
     </nav>
   );

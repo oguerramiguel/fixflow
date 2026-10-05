@@ -35,9 +35,9 @@ export default async function CustomerDetailsPage({
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-950">
+          <h1 className="page-title">
             {customer.name}
-          </h2>
+          </h1>
           <p className="mt-2 text-sm text-slate-600">
             Cliente desde {formatDate(customer.createdAt)}.
           </p>
@@ -46,13 +46,13 @@ export default async function CustomerDetailsPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/app/customers/${customer.id}/edit`}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            className="button-secondary"
           >
             Editar cliente
           </Link>
           <Link
             href={`/app/equipment/new?customerId=${customer.id}`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+            className="button-primary"
           >
             Novo equipamento
           </Link>
@@ -112,7 +112,7 @@ export default async function CustomerDetailsPage({
                       Equipamento
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                      Numero de serie
+                      Número de série
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                       Criado em
@@ -152,7 +152,7 @@ export default async function CustomerDetailsPage({
                           </Link>
                           <Link
                             href={`/app/equipment/${equipment.id}/edit`}
-                            className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                            className="font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
                           >
                             Editar
                           </Link>

@@ -1,0 +1,133 @@
+{
+  "identity": "FixFlow 1.0 / B1 - Refined Geometric",
+  "sourceRoot": "C:\\Projetos\\fixflow-brand\\fixflow-1.0",
+  "verifiedOn": "2026-10-06",
+  "allCopiesByteIdentical": true,
+  "assets": [
+    {
+      "file": "public/brand/app-icon-180x180.png",
+      "source": "icons/app-icon-180x180.png",
+      "sha256": "8da926104cb5c549e4c1c6c25145cc6cb2d47d9273dd1972669daa21adea210e",
+      "bytes": 1702,
+      "width": 180,
+      "height": 180
+    },
+    {
+      "file": "public/brand/app-icon-192x192.png",
+      "source": "icons/app-icon-192x192.png",
+      "sha256": "f496a6c3d07e2173e1bfa6ed54f57beb4fe9d330363c5bd58e8c3f0aa68b5bbb",
+      "bytes": 1777,
+      "width": 192,
+      "height": 192
+    },
+    {
+      "file": "public/brand/app-icon-512x512.png",
+      "source": "icons/app-icon-512x512.png",
+      "sha256": "f8115f836561be3aabf44ec320d317e60ac0d0dc8397034f47f523cdeb8fb5f5",
+      "bytes": 5086,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/brand/favicon.ico",
+      "source": "icons/favicon.ico",
+      "sha256": "3080fe3db623874aec56e6e913067433f219415ce4d563d2fdb7b6f0756a5f4c",
+      "bytes": 2015,
+      "sizes": [
+        "16x16",
+        "32x32",
+        "48x48"
+      ]
+    },
+    {
+      "file": "public/brand/favicon.svg",
+      "source": "icons/favicon.svg",
+      "sha256": "5edc52ad504f9666207a9a665f371dc54cebec4aa92fddf1d62631a7045eb3f4",
+      "bytes": 439,
+      "viewBox": "0 0 16 16",
+      "paths": 1,
+      "fills": [
+        "#2563EB",
+        "#FFFFFF"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-horizontal-white.svg",
+      "source": "svg/fixflow-horizontal-white.svg",
+      "sha256": "caa3f02d1ffc551db92fdf8c29c61691003c7dc0a2570c365b9e59e1c434d598",
+      "bytes": 2464,
+      "viewBox": "0 0 857 100",
+      "paths": 8,
+      "fills": [
+        "#FFFFFF"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-horizontal.svg",
+      "source": "svg/fixflow-horizontal.svg",
+      "sha256": "159486f80e2451e33413898b291619db7703a6378405acd0641aaa8c16b616a0",
+      "bytes": 2464,
+      "viewBox": "0 0 857 100",
+      "paths": 8,
+      "fills": [
+        "#2563EB"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-symbol-white.svg",
+      "source": "svg/fixflow-symbol-white.svg",
+      "sha256": "4213a9b4e878256f713c76fe7babfdf1b32f079db5c88177bc81888fe7370cab",
+      "bytes": 393,
+      "viewBox": "0 0 96 100",
+      "paths": 1,
+      "fills": [
+        "#FFFFFF"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-symbol.svg",
+      "source": "svg/fixflow-symbol.svg",
+      "sha256": "ab84f2647e0738588e7a0c40913438818e8c406758973d9b4441d7d9466f8208",
+      "bytes": 393,
+      "viewBox": "0 0 96 100",
+      "paths": 1,
+      "fills": [
+        "#2563EB"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-wordmark-white.svg",
+      "source": "svg/fixflow-wordmark-white.svg",
+      "sha256": "69766a11041df36aadbaeae618b2bf17aa1528ac80e0a88f3c575d091e587340",
+      "bytes": 2208,
+      "viewBox": "0 0 701 100",
+      "paths": 7,
+      "fills": [
+        "#FFFFFF"
+      ]
+    },
+    {
+      "file": "public/brand/fixflow-wordmark.svg",
+      "source": "svg/fixflow-wordmark.svg",
+      "sha256": "3a89cdeb2998100194caf2b6278244603ea4a39b3e03e6021fb33f5c3f0176d6",
+      "bytes": 2208,
+      "viewBox": "0 0 701 100",
+      "paths": 7,
+      "fills": [
+        "#2563EB"
+      ]
+    },
+    {
+      "file": "src/app/fonts/Inter-OFL.txt",
+      "source": "fonts/Inter-OFL.txt",
+      "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
+      "bytes": 4380
+    },
+    {
+      "file": "src/app/fonts/InterVariable.woff2",
+      "source": "fonts/InterVariable.woff2",
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+      "bytes": 352240
+    }
+  ]
+}

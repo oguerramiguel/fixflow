@@ -1,4 +1,4 @@
-import { appConfig } from "@/lib/app";
+import { FixFlowBrand } from "@/components/ui/logo";
 import { AccountSetupForm } from "./setup-account-form";
 import {
   ACCOUNT_SETUP_UNAVAILABLE_MESSAGE,
@@ -54,9 +54,7 @@ export default async function AccountSetupPage({
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
       <section className="w-full max-w-md">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-          {appConfig.name}
-        </p>
+        <FixFlowBrand />
         <h1 className="mt-3 text-3xl font-bold text-slate-950">
           Configure sua conta
         </h1>

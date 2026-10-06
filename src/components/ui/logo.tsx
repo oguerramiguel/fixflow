@@ -1,30 +1,71 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/components/ui/utils";
 
-type LogoProps = {
-  compact?: boolean;
-  href?: string;
+type BrandVariant = "wordmark" | "horizontal" | "symbol";
+
+type BrandProps = {
+  variant?: BrandVariant;
+  height?: 24 | 32;
+  decorative?: boolean;
   className?: string;
 };
 
-export function FixFlowLogo({ compact = false, href = "/app", className }: LogoProps) {
+const brandWidths: Record<BrandVariant, number> = {
+  wordmark: 701,
+  horizontal: 857,
+  symbol: 96
+};
+
+export function FixFlowBrand({
+  variant = "wordmark",
+  height = 24,
+  decorative = false,
+  className
+}: BrandProps) {
   return (
-    <Link
-      href={href}
-      className={cn("inline-flex items-center gap-3 rounded-xl", className)}
-      aria-label="FixFlow"
+    <span
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : "FixFlow"}
+      aria-hidden={decorative || undefined}
+      className={cn("inline-flex shrink-0 items-center p-[0.29em] align-middle", className)}
+      style={{ fontSize: height }}
     >
-      <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-600 text-white shadow-lg shadow-brand-600/20">
-        <svg aria-hidden="true" viewBox="0 0 32 32" className="size-6" fill="none">
-          <path d="M8 8h16M8 8v16M8 16h12" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-          <circle cx="23" cy="22" r="3" fill="currentColor" />
-        </svg>
-      </span>
-      {!compact ? (
-        <span className="text-lg font-bold tracking-[-0.035em] text-slate-950 dark:text-slate-50">
-          Fix<span className="text-brand-600 dark:text-brand-400">Flow</span>
-        </span>
-      ) : null}
+      <Image
+        src={`/brand/fixflow-${variant}.svg`}
+        alt=""
+        aria-hidden="true"
+        width={brandWidths[variant]}
+        height={100}
+        unoptimized
+        loading="eager"
+        className="block dark:hidden"
+        style={{ height, width: "auto" }}
+      />
+      <Image
+        src={`/brand/fixflow-${variant}-white.svg`}
+        alt=""
+        aria-hidden="true"
+        width={brandWidths[variant]}
+        height={100}
+        unoptimized
+        loading="eager"
+        className="hidden dark:block"
+        style={{ height, width: "auto" }}
+      />
+    </span>
+  );
+}
+
+type LogoProps = Omit<BrandProps, "decorative"> & {
+  compact?: boolean;
+  href?: string;
+};
+
+export function FixFlowLogo({ compact = false, variant = "wordmark", height = 24, href = "/app", className }: LogoProps) {
+  return (
+    <Link href={href} className={cn("inline-flex min-h-11 shrink-0 items-center rounded-xl", className)} aria-label="FixFlow">
+      <FixFlowBrand variant={compact ? "symbol" : variant} height={height} decorative />
     </Link>
   );
 }

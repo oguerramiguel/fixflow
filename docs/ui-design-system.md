@@ -42,7 +42,8 @@ mais claras, sem grandes areas em preto puro.
 Os componentes compartilhados ficam em `src/components/ui`:
 
 - `AppShell`: sidebar desktop recolhivel e drawer mobile;
-- `FixFlowLogo`: marca vetorial local, sem asset ou dependencia externa;
+- `FixFlowLogo`: link de marca com assets oficiais FixFlow 1.0 em `public/brand`;
+- `FixFlowBrand`: marca sem link, com alternativa acessível ou decorativa;
 - `ThemeToggle`: alternancia acessivel de tema;
 - `PageHeader`, `EmptyState` e `Pagination`: estrutura recorrente de paginas;
 - `ServiceOrderStatusBadge` e `QuoteStatusBadge`: semantica visual centralizada;
@@ -51,6 +52,37 @@ Os componentes compartilhados ficam em `src/components/ui`:
 
 Classes de componente como `surface-card`, `button-primary`, `form-input` e
 `data-table` padronizam os elementos que nao precisam de um wrapper React.
+
+## Identidade oficial FixFlow 1.0 — Fase 9E
+
+A marca B1 — Refined Geometric vem do pacote oficial, sem alterar paths,
+viewBox ou fills. `docs/fixflow-brand-assets.json` registra origem, dimensões e
+SHA-256 das cópias. O azul é `#2563EB`; no tema escuro, usa-se o SVG branco
+oficial, sem filtros CSS, sombras ou recoloração. Cores funcionais permanecem
+independentes da marca.
+
+`FixFlowBrand` aceita `wordmark`, `horizontal` e `symbol`, nas alturas 24 ou
+32 px, com proporção intrínseca e espaço de proteção de 0,29H. Símbolos abaixo
+de 24 px não fazem parte dessa API: exigiriam o asset oficial symbol-small,
+reservado a H16–23. O favicon oficial já inclui sua versão de microescala.
+
+Sidebar e header mobile usam wordmark H24; a sidebar recolhida usa símbolo H32;
+login e página inicial usam wordmark H32; portal usa horizontal H24. A sidebar
+mantém 268/76 px e o drawer mantém sua largura. O controle de expansão fica
+abaixo do símbolo recolhido para respeitar sua área livre e o alvo de toque.
+
+A versão sem link comunica “FixFlow” uma vez por `role="img"`/`aria-label`;
+a versão decorativa fica oculta da árvore acessível. `FixFlowLogo` preserva o
+destino do link e fornece seu nome acessível, sem duplicá-lo nas imagens.
+
+Inter variável local substitui a fonte de sistema via `next/font/local`, com
+`display: swap`, fallback ajustado pelo Next e licença OFL incluída. Apenas um
+WOFF2 é distribuído; não há requisição a fornecedor de fontes nem dependência
+nova. O wordmark continua sendo paths, independente da Inter.
+
+Metadata referencia favicon SVG/ICO, ícones 192/512 e Apple 180 em
+`public/brand`. Nome e descrição existentes são preservados. Não há manifest,
+service worker ou instalação PWA; o maskable não é copiado sem consumidor.
 
 ## Dashboard
 

@@ -99,9 +99,9 @@ export function AppShell({ children, user }: AppShellProps) {
   const compact = mobileOpen ? false : collapsed;
   const navContent = (
     <>
-      <div className={cn("flex h-20 items-center", compact ? "justify-center px-3" : "justify-between px-5")}>
-        {!compact ? <FixFlowLogo /> : null}
-        <button type="button" className="icon-button hidden lg:inline-flex" onClick={toggleCollapsed} aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}>
+      <div className={cn("relative flex h-20 shrink-0 items-center px-3", compact ? "justify-center" : "justify-between gap-1")}>
+        <FixFlowLogo compact={compact} height={compact ? 32 : 24} />
+        <button type="button" className={cn("icon-button hidden lg:inline-flex", compact && "absolute inset-x-3 top-20")} onClick={toggleCollapsed} aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}>
           {compact ? <ChevronRightIcon className="size-4" /> : <ChevronLeftIcon className="size-4" />}
         </button>
         <button type="button" className="icon-button lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">
@@ -109,7 +109,7 @@ export function AppShell({ children, user }: AppShellProps) {
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+      <div className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4", compact && "pt-14")}>
         <button type="button" className={cn("button-secondary mb-3", compact && "px-0")} aria-label="Buscar e abrir comandos" aria-keyshortcuts="Control+k Meta+k" onClick={() => { setMobileOpen(false); setSearchOpen(true); }}>
           <SearchIcon className="size-5 shrink-0" />{!compact ? <><span>Buscar</span><kbd className="ml-auto text-xs muted-text">Ctrl / ⌘ K</kbd></> : null}
         </button>

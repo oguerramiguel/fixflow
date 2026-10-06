@@ -51,7 +51,7 @@ function PublicLookupRateLimitMessage() {
   return (
     <main className="min-h-screen px-5 py-8 sm:px-8">
       <section className="surface-card mx-auto mt-16 w-full max-w-xl p-6 sm:p-8">
-        <FixFlowLogo href="/" />
+        <FixFlowLogo href="/" variant="horizontal" />
         <h1 className="mt-8 text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">Não foi possível carregar o acompanhamento</h1>
         <p className="mt-3 text-sm leading-6 muted-text">{RATE_LIMIT_EXCEEDED_MESSAGE}</p>
       </section>
@@ -75,7 +75,7 @@ export default async function PublicTrackingPage({ params }: PublicTrackingPageP
   return (
     <main className="min-h-screen [overflow-wrap:anywhere] bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.10),transparent_32rem)] px-4 py-5 sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-5xl">
-        <header className="flex items-center justify-between gap-4"><FixFlowLogo href={`/track/${serviceOrder.publicCode}`} /><ThemeToggle compact /></header>
+        <header className="flex items-center justify-between gap-4"><FixFlowLogo href={`/track/${serviceOrder.publicCode}`} variant="horizontal" /><ThemeToggle compact /></header>
 
         <section className="mt-8 sm:mt-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

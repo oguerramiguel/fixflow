@@ -18,7 +18,7 @@ export default async function LoginPage() {
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,0.92fr)_minmax(520px,1.08fr)]">
         <section className="flex items-center justify-center px-5 py-16 sm:px-10 lg:px-14">
           <div className="w-full max-w-md">
-            <FixFlowLogo href="/login" />
+            <FixFlowLogo href="/login" height={32} />
             <div className="mt-12">
               <p className="page-eyebrow">Bem-vindo de volta</p>
               <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 dark:text-slate-50 sm:text-4xl">Acesse sua operação</h1>

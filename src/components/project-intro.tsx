@@ -1,4 +1,5 @@
 import { appConfig } from "@/lib/app";
+import { FixFlowBrand } from "@/components/ui/logo";
 
 export function ProjectIntro() {
   return (
@@ -7,7 +8,7 @@ export function ProjectIntro() {
         {appConfig.statusLabel}
       </p>
       <h1 className="text-4xl font-bold text-slate-950 sm:text-5xl">
-        {appConfig.name}
+        <FixFlowBrand height={32} />
       </h1>
       <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700">
         {appConfig.description}

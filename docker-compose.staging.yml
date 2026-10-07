@@ -42,6 +42,8 @@ services:
     build:
       context: .
       target: runner
+      args:
+        FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS: "${FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS:?configure FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS}"
     restart: unless-stopped
     env_file:
       - .env.staging

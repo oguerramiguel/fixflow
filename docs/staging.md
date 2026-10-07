@@ -20,10 +20,14 @@ production still requires HTTPS.
 Validate the rendered configuration without starting services:
 
 ```powershell
-docker compose --env-file .env.staging -f docker-compose.staging.yml config
+docker compose --env-file .env.staging -f docker-compose.staging.yml config --quiet
 ```
 
 ## Start
+
+Use `--quiet` above to validate without printing expanded database credentials.
+The exact public Server Action hosts are also supplied as a non-secret build
+argument. Rebuild the web image when changing this allowlist.
 
 ```powershell
 docker compose --env-file .env.staging -f docker-compose.staging.yml up --build -d
@@ -68,4 +72,4 @@ deletion. Do not add `--volumes` unless deletion is separately authorized.
 `render.yaml` prepares a paid Render web service and private PostgreSQL database
 for the first controlled pilot. Applying the Blueprint, selecting a paid plan,
 configuring recovery and deploying remain manual operator actions. The complete
-runbook is in `docs/phase-9b-pilot-readiness.md`.
+current first-deploy runbook is in `docs/phase-10a-render-staging-deploy.md`.

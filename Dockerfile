@@ -16,6 +16,8 @@ RUN node node_modules/prisma/build/index.js generate
 FROM base AS builder
 
 ENV NODE_ENV=production
+# Public hosts only: Next.js embeds Server Action origins during the build.
+ARG FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS
 COPY --from=prisma-client /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
@@ -28,6 +30,7 @@ COPY package.json package-lock.json tsconfig.json ./
 COPY prisma ./prisma
 COPY scripts ./scripts
 COPY src ./src
+USER node
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
 
 FROM base AS runner

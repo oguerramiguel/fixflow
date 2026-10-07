@@ -104,3 +104,18 @@ a separate disposable database are required before pilot use, but neither is
 enabled or rehearsed by repository changes. Keep the database private and
 record recovery point, duration and integrity evidence without credentials or
 customer data.
+
+For the first staging deploy, confirm paid recovery in the database's Recovery
+page. Render currently supplies PITR for paid databases (three days on Hobby,
+seven on Pro or higher) and logical exports retained for seven days. PITR
+creates a separate instance; a rehearsal must not repoint the active app to it.
+Use the dashboard export to avoid opening public database access. Provider
+exports are `.dir.tar.gz`, unlike the custom-format `pg_dump` example above:
+extract in a protected location and pass the extracted directory to
+`pg_restore`. PostgreSQL client tools must match the destination major version.
+Archive/compression alone is not encryption; use encrypted storage. Confirm
+the disposable target, inspect the archive and verify integrity as above.
+Recovery instances can incur additional cost, and deletion requires a separate
+target check. No backup, recovery or deletion has been executed in Phase 10A.
+See [Render recovery and backups](https://render.com/docs/postgresql-backups)
+and `docs/phase-10a-render-staging-deploy.md`.

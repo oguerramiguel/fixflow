@@ -13,6 +13,11 @@ describe("production readiness artifacts", () => {
     expect(dockerfile).toContain("USER nextjs");
     expect(dockerfile).toContain("/app/.next/standalone");
     expect(dockerfile).not.toContain("COPY .env");
+    const migrationStage = dockerfile.split("FROM base AS migration")[1]
+      .split("FROM base AS runner")[0];
+    expect(migrationStage).toContain("USER node");
+    expect(dockerfile).toContain("ARG FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS");
+    expect(dockerfile).not.toMatch(/ARG\s+(DATABASE_URL|.*PASSWORD|.*TOKEN)/);
   });
 
   it("keeps staging PostgreSQL internal and gates web on migrations", async () => {
@@ -22,6 +27,7 @@ describe("production readiness artifacts", () => {
     expect(compose).toContain("internal: true");
     expect(compose).toContain("target: migration");
     expect(compose).toContain("target: runner");
+    expect(compose).toContain("FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS: \"${FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS:?");
     const postgresService = compose.split("\n  migration:")[0];
     expect(postgresService).not.toContain("\n    ports:");
     expect(compose).not.toContain("db push");
@@ -35,6 +41,9 @@ describe("production readiness artifacts", () => {
 
     expect(blueprint).toContain("runtime: docker");
     expect(blueprint).toContain("autoDeployTrigger: off");
+    expect(blueprint).not.toMatch(/\bautoDeploy:/);
+    expect(blueprint).toContain("plan: 0.5c-512mb");
+    expect(blueprint).toContain("plan: 0.1c-256mb");
     expect(blueprint).toContain(
       "preDeployCommand: npm run prisma:migrate:deploy && FIXFLOW_RELEASE_SHA=$RENDER_GIT_COMMIT npm run deploy:check"
     );

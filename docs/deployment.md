@@ -11,6 +11,10 @@ Phase 9B adds a checked-in Render Blueprint for a controlled public staging
 pilot. It is prepared but has not been applied to an account. See
 `docs/phase-9b-pilot-readiness.md` for the decision and operator steps.
 
+Phase 10A audits this preparation against current provider documentation. See
+`docs/phase-10a-render-staging-deploy.md` for the first-deploy operator guide.
+No external infrastructure was applied during that local preparation.
+
 ## Environment matrix
 
 | Environment | `NODE_ENV` | `FIXFLOW_APP_ENV` | Rate limit | Audit | Base URL |
@@ -46,7 +50,8 @@ the platform so only one migration job runs for a release.
 - `runner`: minimal standalone Next.js runtime, non-root, without source tests,
   Git metadata, env files or backup artifacts.
 - `migration`: operational image with Prisma CLI, schema, migrations and
-  deployment scripts. Its default command is `prisma migrate deploy`.
+  deployment scripts, running as the official image's non-root `node` user.
+  Its default command is `prisma migrate deploy`.
 - `render`: provider image that extends `runner` with the administrative files
   required by Render pre-deploy and ephemeral SSH commands.
 
@@ -97,6 +102,12 @@ Do not configure a broad or user-controlled proxy chain.
 `FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS` is a comma-separated allowlist of exact
 hosts, including the application host, without schemes, paths or wildcards.
 Keep this list as small as possible.
+
+Next.js embeds the additional Server Action allowlist at build time. The Docker
+builder declares only `FIXFLOW_SERVER_ACTION_ALLOWED_ORIGINS` as a public build
+argument; Render provides it from the service configuration and local staging
+Compose forwards it explicitly. Rebuild after changing hosts. Never pass the
+database URL, credentials or invitation tokens as build arguments.
 
 ## Secrets
 

@@ -6,9 +6,24 @@ dist/
 coverage/
 
 .env
-.env*.local
+.env.*
 !.env.example
 !.env.staging.example
+
+# Local credentials and database exports must never be versioned.
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+.ssh/
+backups/
+*.bak
+*.backup
+*.dump
+*.sql.gz
+*.dir.tar.gz
 
 *.log
 *.tsbuildinfo

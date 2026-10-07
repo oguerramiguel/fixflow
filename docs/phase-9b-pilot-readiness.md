@@ -7,6 +7,10 @@ tenant. The repository contains the provider declaration and administrative
 provisioning path, but this work did not create cloud accounts, billing,
 deployments, domains, backups, smoke evidence or pilot records.
 
+For the current first staging deployment procedure and plan identifiers, use
+`docs/phase-10a-render-staging-deploy.md`. The estimates below are historical
+planning context, not a current quotation or authorization to purchase.
+
 Only fictional data created manually through the product may be used in the
 pilot. Never copy real customers, devices, serial numbers, contacts or service
 history into staging.
@@ -129,7 +133,8 @@ evidence and create a corrective forward migration when necessary.
 - Deploy a reviewed commit and record its SHA.
 - Confirm the pre-deploy command ran once and succeeded.
 - Verify live, ready, HTTPS and certificate behavior.
-- Run production smoke with an approved fictional public code.
+- Run production smoke with the staging base URL; validate an approved fictional
+  public code separately in the browser (the smoke CLI has no public-code flag).
 - Run provisioning dry-run, then once in ephemeral interactive SSH.
 - Complete OWNER setup and create only fictional manual demo data.
 - Rehearse restore separately and document RPO/RTO evidence.
